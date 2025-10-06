@@ -7,7 +7,7 @@ void keyboard_handler_c() {
     uint8_t scancode = inb(KEYBOARD_DATA_PORT);
 
     // Example: write scancode to VGA memory at top left
-    volatile char* video = (char*)0xB8000;
+    volatile char* video = (char*)0xb8000;
     video[0] = 'S';                // show a character
     video[1] = 0x07;               // white on black
     video[2] = 'C';
