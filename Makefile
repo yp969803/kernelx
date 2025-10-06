@@ -5,7 +5,7 @@
 # detect all .o files based on their .c source
 C_SOURCES = $(wildcard *.c)
 HEADERS = $(wildcard *.h)
-OBJ_FILES = ${C_SOURCES:.c=.o}
+OBJ_FILES = ${C_SOURCES:.c=.o} isr_keyboard.o
 
 CC ?= x86_64-elf-gcc
 LD ?= x86_64-elf-ld

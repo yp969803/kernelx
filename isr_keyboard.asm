@@ -1,7 +1,7 @@
 
 [bits 32]
 
-global isr1
+global isr_keyboard
 extern keyboard_handler_c   ; defined in C
 
 isr_keyboard:
