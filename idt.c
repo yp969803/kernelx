@@ -23,11 +23,6 @@ static inline void load_idt(void) {
 }
 
 static inline void pic_remap(int offset1, int offset2) {
-    uint8_t a1, a2;
-
-    // Save masks
-    a1 = inb(0x21);   // get master mask
-    a2 = inb(0xA1);   // get slave mask
 
     // Start initialization sequence (cascade mode)
     outb(0x20, 0x11);
@@ -45,9 +40,9 @@ static inline void pic_remap(int offset1, int offset2) {
     outb(0x21, 0x01);
     outb(0xA1, 0x01);
 
-    // Restore saved masks
-    outb(0x21, a1);
-    outb(0xA1, a2);
+    // Mask all the irqs
+    outb(0x21, 0x00);
+    outb(0xA1, 0x00);
 }
 
 void idt_init(void) {
