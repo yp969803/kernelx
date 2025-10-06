@@ -22,7 +22,7 @@ static inline void load_idt(void) {
     asm volatile ("lidt %0" : : "m"(idt_ptr));  // load the IDT
 }
 
-static inline pic_remap(int offset1, int offset2) {
+static void pic_remap(int offset1, int offset2) {
     unsigned char a1, a2;
 
     // Save masks

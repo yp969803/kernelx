@@ -1,12 +1,7 @@
 #include <stdint.h>
+#include "io.h"
 
 #define KEYBOARD_DATA_PORT 0x60
-
-static inline uint8_t inb(uint16_t port) {
-    uint8_t result;
-    asm volatile ("inb %1, %0" : "=a"(result) : "dN"(port));
-    return result;
-}
 
 void keyboard_handler_c() {
     uint8_t scancode = inb(KEYBOARD_DATA_PORT);
