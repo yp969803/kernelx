@@ -45,6 +45,10 @@ static inline void pic_remap(int offset1, int offset2) {
     outb(0xA1, 0x00);
 }
 
+static inline void set_interrupt(){
+    __asm__ __volatile__("sti");
+}
+
 void idt_init(void) {
     // zero out IDT
     for (int i = 0; i < IDT_SIZE; ++i) {
@@ -56,4 +60,6 @@ void idt_init(void) {
     // finally load the IDT
     load_idt();
     pic_remap(0x20, 0x28);  // Master at 0x20–0x27, Slave at 0x28–0x2F
+    set_interrupt();
 }
+
