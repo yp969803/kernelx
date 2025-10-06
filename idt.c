@@ -27,7 +27,7 @@ void idt_init(void) {
         set_idt_entry(i, 0, 0, 0);
     }
 
-    set_idt_entry(33, (uint32_t)isr1, KERNEL_CS, 0x8E);
+    set_idt_entry(0x21, (uint32_t)isr1, KERNEL_CS, 0x8E);
 
     // finally load the IDT
     load_idt();
