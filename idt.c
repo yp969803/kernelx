@@ -23,7 +23,7 @@ static inline void load_idt(void) {
 }
 
 static inline void pic_remap(int offset1, int offset2) {
-    unsigned char a1, a2;
+    uint8_t a1, a2;
 
     // Save masks
     a1 = inb(0x21);   // get master mask
