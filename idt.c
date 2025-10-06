@@ -40,9 +40,9 @@ static inline void pic_remap(int offset1, int offset2) {
     outb(0x21, 0x01);
     outb(0xA1, 0x01);
 
-    // Mask all the irqs
-    outb(0x21, 0x00);
-    outb(0xA1, 0x00);
+    // Only unmask keyboard interrupt (IRQ1)
+    outb(0x21, 0xFF & ~0x02); // bit 1 = 0 (unmask), others = 1 (masked)
+    outb(0xA1, 0xFF);
 }
 
 static inline void set_interrupt(){
