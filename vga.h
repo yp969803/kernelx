@@ -5,6 +5,9 @@
 #define VGA_WIDTH 80
 #define VGA_HEIGHT 25
 
+#define INDEX_PORT 0x3d4
+#define DATA_PORT 0x3d5
+
 #define Black   0x0
 #define Blue    0x1
 #define Green	0x2
@@ -23,3 +26,6 @@
 #define White	0xf
 
 void clear_screen();
+void set_cursor(uint8_t x, uint8_t y);
+uint16_t get_cursor_position();
+void vga_init();
