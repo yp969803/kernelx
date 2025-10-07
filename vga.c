@@ -44,3 +44,7 @@ uint16_t get_cursor_position()
 // 	outb(VGA_DATA_PORT, (inb(VGA_DATA_PORT) & 0xe0) | cursor_end);
 // }
 
+void vga_init() {
+    clear_screen();
+    set_cursor(0, 0);
+}

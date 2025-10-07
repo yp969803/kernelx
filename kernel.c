@@ -2,8 +2,7 @@
 #include "vga.h"
 
 void main() {
-    clear_screen();
-    set_cursor(0, 0);
+    vga_init();
     
     idt_init();
     
