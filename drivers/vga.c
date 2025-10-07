@@ -30,18 +30,18 @@ uint16_t get_cursor_position(void)
     return pos;
 }
 
-// void disable_cursor()
-// {
-// 	outb(VGA_INDEX_PORT, 0x0a);
-// 	outb(VGA_DATA_PORT, 0x20);
-// }
+void disable_cursor(void)
+{
+	outb(VGA_INDEX_PORT, 0x0a);
+	outb(VGA_DATA_PORT, 0x20);
+}
 
-// void enable_cursor(uint8_t cursor_start, uint8_t cursor_end)
-// {
-// 	outb(VGA_INDEX_PORT, 0x0a);
-// 	outb(VGA_DATA_PORT, (inb(VGA_DATA_PORT) & 0xc0) | cursor_start);
+void enable_cursor(uint8_t cursor_start, uint8_t cursor_end)
+{
+	outb(VGA_INDEX_PORT, 0x0a);
+	outb(VGA_DATA_PORT, (inb(VGA_DATA_PORT) & 0xc0) | cursor_start);
 
-// 	outb(VGA_INDEX_PORT, 0x0b);
-// 	outb(VGA_DATA_PORT, (inb(VGA_DATA_PORT) & 0xe0) | cursor_end);
-// }
+	outb(VGA_INDEX_PORT, 0x0b);
+	outb(VGA_DATA_PORT, (inb(VGA_DATA_PORT) & 0xe0) | cursor_end);
+}
 
