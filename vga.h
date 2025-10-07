@@ -5,8 +5,8 @@
 #define VGA_WIDTH 80
 #define VGA_HEIGHT 25
 
-#define INDEX_PORT 0x3d4
-#define DATA_PORT 0x3d5
+#define VGA_INDEX_PORT 0x3d4
+#define VGA_DATA_PORT 0x3d5
 
 #define Black   0x0
 #define Blue    0x1
