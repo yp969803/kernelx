@@ -28,5 +28,5 @@
 void clear_screen();
 void set_cursor(uint8_t x, uint8_t y);
 uint16_t get_cursor_position();
-void disable_cursor();
-void enable_cursor(uint8_t cursor_start, uint8_t cursor_end);
+// void disable_cursor();
+// void enable_cursor(uint8_t cursor_start, uint8_t cursor_end);
