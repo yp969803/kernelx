@@ -16,9 +16,9 @@ call switch_to_32bit
 
 jmp $
 
-%include "disk.asm"
-%include "gdt.asm"
-%include "switch-to-32bit.asm"
+%include "boot/disk.asm"
+%include "boot/gdt.asm"
+%include "boot/switch-to-32bit.asm"
 
 [bits 16]
 load_kernel:

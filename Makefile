@@ -3,9 +3,9 @@
 # $^ = all dependencies
 
 # detect all .o files based on their .c source
-C_SOURCES = $(wildcard *.c)
-HEADERS = $(wildcard *.h)
-OBJ_FILES = ${C_SOURCES:.c=.o} isr_keyboard.o
+C_SOURCES = $(wildcard kernel/*.c drivers/*.c cpu/*.c)
+HEADERS = $(wildcard kernel/*.h  drivers/*.h cpu/*.h)
+OBJ_FILES = ${C_SOURCES:.c=.o cpu/isr_keyboard.o} 
 
 CC ?= x86_64-elf-gcc
 LD ?= x86_64-elf-ld
@@ -14,10 +14,10 @@ LD ?= x86_64-elf-ld
 all: run
 
 # Notice how dependencies are built as needed
-kernel.bin: kernel_entry.o ${OBJ_FILES}
+kernel.bin: boot/kernel_entry.o ${OBJ_FILES}
 	$(LD) -m elf_i386 -o $@ -Ttext 0x1000 $^ --oformat binary
 
-os-image.bin: mbr.bin kernel.bin
+os-image.bin: boot/mbr.bin kernel.bin
 	cat $^ > $@
 
 run: os-image.bin
@@ -27,7 +27,7 @@ echo: os-image.bin
 	xxd $<
 
 # only for debug
-kernel.elf: kernel_entry.o ${OBJ_FILES}
+kernel.elf: boot/kernel_entry.o ${OBJ_FILES}
 	$(LD) -m elf_i386 -o $@ -Ttext 0x1000 $^
 
 debug: os-image.bin kernel.elf
@@ -48,3 +48,7 @@ debug: os-image.bin kernel.elf
 
 clean:
 	$(RM) *.bin *.o *.dis *.elf
+	$(RM) kernel/*.o
+	$(RM) boot/*.o boot/*.bin
+	$(RM) drivers/*.o
+	$(RM) cpu/*.o

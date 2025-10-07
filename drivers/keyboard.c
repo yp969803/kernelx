@@ -1,5 +1,5 @@
 #include <stdint.h>
-#include "io.h"
+#include "../cpu/io.h"
 
 #define KEYBOARD_DATA_PORT 0x60
 

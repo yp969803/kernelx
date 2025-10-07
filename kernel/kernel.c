@@ -1,5 +1,5 @@
-#include "idt.h"
-#include "vga.h"
+#include "../cpu/idt.h"
+#include "../drivers/vga.h"
 
 void main() {
     vga_init();

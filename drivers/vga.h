@@ -1,5 +1,5 @@
 #include <stdint.h>
-#include "io.h"
+#include "../cpu/io.h"
 
 #define VGA_ADDRESS 0xb8000
 #define VGA_WIDTH 80
