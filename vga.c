@@ -19,7 +19,7 @@ void set_cursor(uint8_t x, uint8_t y) {
     outb(DATA_PORT, (uint8_t)((pos >> 8) & 0xff));
 }
 
-uint16_t get_cursor_position(void)
+uint16_t get_cursor_position()
 {
     uint16_t pos = 0;
     outb(INDEX_PORT, 0x0f);
@@ -35,7 +35,7 @@ void disable_cursor()
 	outb(DATA_PORT, 0x20);
 }
 
-static enable_cursor(uint8_t cursor_start, uint8_t cursor_end)
+void enable_cursor(uint8_t cursor_start, uint8_t cursor_end)
 {
 	outb(INDEX_PORT, 0x0a);
 	outb(DATA_PORT, (inb(DATA_PORT) & 0xc0) | cursor_start);
@@ -44,11 +44,3 @@ static enable_cursor(uint8_t cursor_start, uint8_t cursor_end)
 	outb(DATA_PORT, (inb(DATA_PORT) & 0xe0) | cursor_end);
 }
 
-void vga_init(){
-
-    clear_screen();
-        // enable_cursor(14, 15); underline cursor
-    enable_cursor(0, 15); // | 
-    set_cursor(0, 0);
-    
-}

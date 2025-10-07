@@ -3,6 +3,8 @@
 
 void main() {
     clear_screen();
+    set_cursor(0, 0);
+    
     idt_init();
     
     while(1) {
