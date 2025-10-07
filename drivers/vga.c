@@ -1,6 +1,6 @@
 #include "vga.h"
 
-void clear_screen() {
+void clear_screen(void) {
     volatile uint16_t* video = (uint16_t*)VGA_ADDRESS;
     uint16_t color = (Black << 4) | White; // Black background, White text
     uint16_t blank = (color << 8) | ' ';
@@ -20,7 +20,7 @@ void set_cursor(uint8_t x, uint8_t y) {
     outb(VGA_DATA_PORT, (uint8_t)((pos >> 8) & 0xff));
 }
 
-uint16_t get_cursor_position()
+uint16_t get_cursor_position(void)
 {
     uint16_t pos = 0;
     outb(VGA_INDEX_PORT, 0x0f);

@@ -35,7 +35,7 @@ debug: os-image.bin kernel.elf
 	gdb-multiarch -ex "target remote localhost:1234" -ex "symbol-file kernel.elf"
 
 %.o: %.c ${HEADERS}
-	$(CC) -g -m32 -ffreestanding -fno-pie -fno-stack-protector -c $< -o $@ # -g for debugging
+	$(CC) -g -m32 -ffreestanding -fno-pie -fno-stack-protector -O1 -c $< -o $@ # -g for debugging
 
 %.o: %.asm
 	nasm $< -f elf -o $@

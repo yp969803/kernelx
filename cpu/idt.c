@@ -2,7 +2,7 @@
 #include "io.h"
 
 // ISR for keyboard interrupt
-extern void isr_keyboard();      // ISR defined in assembly (or change name to isr_keyboard)
+extern void isr_keyboard(void);      // ISR defined in assembly (or change name to isr_keyboard)
 
 struct IDTEntry idt[IDT_SIZE];
 
@@ -22,15 +22,15 @@ static inline void load_idt(void) {
     asm volatile ("lidt %0" : : "m"(idt_ptr));  // load the IDT
 }
 
-static inline void pic_remap(int offset1, int offset2) {
+static inline void pic_remap(void) {
 
     // Start initialization sequence (cascade mode)
     outb(0x20, 0x11);
     outb(0xA0, 0x11);
 
     // Set vector offset
-    outb(0x21, offset1);  // Master PIC vector offset
-    outb(0xA1, offset2);  // Slave PIC vector offset
+    outb(0x21, 0x20);  // Master PIC vector offset
+    outb(0xA1, 0x28);  // Slave PIC vector offset
 
     // Tell Master PIC that there is a slave PIC at IRQ2 (0000 0100)
     outb(0x21, 0x04);
@@ -45,7 +45,7 @@ static inline void pic_remap(int offset1, int offset2) {
     outb(0xA1, 0xFF);
 }
 
-static inline void set_interrupt(){
+static inline void set_interrupt(void){
     __asm__ __volatile__("sti");
 }
 
@@ -59,7 +59,7 @@ void idt_init(void) {
 
     // finally load the IDT
     load_idt();
-    pic_remap(0x20, 0x28);  // Master at 0x20–0x27, Slave at 0x28–0x2F
+    pic_remap();  // Master at 0x20–0x27, Slave at 0x28–0x2F
     set_interrupt();
 }
 
