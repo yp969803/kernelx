@@ -2,7 +2,7 @@
 #include "../drivers/vga.h"
 
 void main() {
-    vga_init();
+    clear_screen();
     
     idt_init();
     

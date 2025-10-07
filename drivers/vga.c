@@ -7,6 +7,7 @@ void clear_screen() {
     for (int i = 0; i < VGA_WIDTH * VGA_HEIGHT; i++) { 
         video[i] = blank;
     }
+    set_cursor(0, 0);
 }
 
 void set_cursor(uint8_t x, uint8_t y) {
@@ -44,7 +45,3 @@ uint16_t get_cursor_position()
 // 	outb(VGA_DATA_PORT, (inb(VGA_DATA_PORT) & 0xe0) | cursor_end);
 // }
 
-void vga_init() {
-    clear_screen();
-    set_cursor(0, 0);
-}
