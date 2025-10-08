@@ -1,4 +1,5 @@
 #include "vga.h"
+#include "../kernel/mem.h"
 
 void clear_screen(void) {
     volatile uint16_t* video = (uint16_t*)VGA_ADDRESS;
@@ -56,8 +57,17 @@ void vga_put_char(uint8_t c) {
     }
 
     if (pos >= VGA_WIDTH * VGA_HEIGHT) {
-        // TODO: scroll screen
-        pos = 0; 
+        memmove(
+        (void*)vga,
+        (void*)(vga + VGA_WIDTH),
+        (VGA_HEIGHT - 1) * VGA_WIDTH * 2
+       );
+
+       for (int col = 0; col < VGA_WIDTH; col++) {
+        vga[(VGA_HEIGHT - 1) * VGA_WIDTH + col] = (color << 8) | ' ';
+       }
+
+        pos = (VGA_HEIGHT - 1) * VGA_WIDTH; 
     }
     set_cursor(pos);
 }
