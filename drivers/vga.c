@@ -43,3 +43,29 @@ void enable_cursor(uint8_t cursor_start, uint8_t cursor_end)
 	outb(VGA_DATA_PORT, (inb(VGA_DATA_PORT) & 0xe0) | cursor_end);
 }
 
+void vga_put_char(uint8_t c) {
+    volatile uint16_t* vga = (volatile uint16_t*)VGA_ADDRESS;
+    uint16_t pos = get_cursor_position();
+    uint16_t color = (Black << 4) | White;
+
+    if (c == '\n') {
+        pos += VGA_WIDTH - (pos % VGA_WIDTH); // move to next line
+    } else {
+        vga[pos] = (color << 8) | c;
+        pos++;
+    }
+
+    if (pos >= VGA_WIDTH * VGA_HEIGHT) {
+        // TODO: scroll screen
+        pos = 0; 
+    }
+    set_cursor(pos);
+}
+
+void vga_print_string(const char* str) {
+    int i = 0;
+    while (str[i] != '\0') {
+        vga_put_char(str[i]);
+        i++;
+    }   
+}
