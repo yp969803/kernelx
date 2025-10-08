@@ -7,12 +7,10 @@ void clear_screen(void) {
     for (int i = 0; i < VGA_WIDTH * VGA_HEIGHT; i++) { 
         video[i] = blank;
     }
-    set_cursor(0, 0);
+    set_cursor(0);
 }
 
-void set_cursor(uint8_t x, uint8_t y) {
-    uint16_t pos = y * VGA_WIDTH + x;
-
+void set_cursor(uint16_t pos) {
     outb(VGA_INDEX_PORT, 0x0f);             // Select low byte
     outb(VGA_DATA_PORT, (uint8_t)(pos & 0xff));
 
