@@ -15,7 +15,7 @@ all: run
 
 # Notice how dependencies are built as needed
 kernel.bin: boot/kernel_entry.o ${OBJ_FILES}
-	$(LD) -m elf_i386 -o $@ -Ttext 0x1000 $^ --oformat binary
+	$(LD) -m elf_i386 -T link.ld -o $@ -Ttext 0x1000 $^ --oformat binary
 
 os-image.bin: boot/mbr.bin kernel.bin
 	cat $^ > $@
@@ -28,7 +28,7 @@ echo: os-image.bin
 
 # only for debug
 kernel.elf: boot/kernel_entry.o ${OBJ_FILES}
-	$(LD) -m elf_i386 -o $@ -Ttext 0x1000 $^
+	$(LD) -m elf_i386 -T link.ld -o $@ $^
 
 debug: os-image.bin kernel.elf
 	qemu-system-i386 -s -S -fda os-image.bin -d guest_errors,int
