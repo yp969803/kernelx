@@ -79,3 +79,13 @@ void vga_print_string(const char* str) {
         i++;
     }   
 }
+
+void vga_remove_char(void){
+    uint16_t pos = get_cursor_position();
+    if(pos == 0) return;
+    pos--;
+    volatile uint16_t* vga = (volatile uint16_t*)VGA_ADDRESS;
+    uint16_t color = (Black << 4) | White;
+    vga[pos] = (color << 8) | ' ';
+    set_cursor(pos);
+}

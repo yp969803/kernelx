@@ -26,5 +26,10 @@ void keyboard_handler_c() {
     if(scancode & 0x80 || scancode >= 128 || keymap[scancode] == 0 || keymap[scancode]==27 || scancode == 0xe0) {
         return;
     }
+
+    if(scancode == BACKSPACE) {
+        vga_remove_char();
+        return;
+    }
     vga_put_char(keymap[scancode]);
 }
