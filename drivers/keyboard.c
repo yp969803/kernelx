@@ -20,7 +20,7 @@ const char keymap[128] = {
     'a','s','d','f','g','h','j','k','l',';','\'','`',0,'\\',
     'z','x','c','v','b','n','m',',','.','/',0,'*',0,' ',0};
 
-void keyboard_handler_c() {
+void keyboard_handler_c(void) {
     uint8_t scancode = inb(KEYBOARD_DATA_PORT);
 
     if(scancode & 0x80 || scancode >= 128 || keymap[scancode] == 0 || keymap[scancode]==27 || scancode == 0xe0) {
