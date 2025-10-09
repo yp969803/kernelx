@@ -1,9 +1,12 @@
 #include "vga.h"
 #include "../kernel/mem.h"
+#include <string.h>
+
+// Default color: Black background, White foreground
+static uint16_t color = (Black << 4) | White;
 
 void clear_screen(void) {
     volatile uint16_t* video = (uint16_t*)VGA_ADDRESS;
-    uint16_t color = (Black << 4) | White; // Black background, White text
     uint16_t blank = (color << 8) | ' ';
     for (int i = 0; i < VGA_WIDTH * VGA_HEIGHT; i++) { 
         video[i] = blank;
@@ -47,7 +50,6 @@ void enable_cursor(uint8_t cursor_start, uint8_t cursor_end)
 void vga_put_char(uint8_t c) {
     volatile uint16_t* vga = (volatile uint16_t*)VGA_ADDRESS;
     uint16_t pos = get_cursor_position();
-    uint16_t color = (Black << 4) | White;
 
     if (c == '\n') {
         pos += VGA_WIDTH - (pos % VGA_WIDTH); // move to next line
@@ -85,7 +87,6 @@ void vga_remove_char(void){
     if(pos == 0) return;
     pos--;
     volatile uint16_t* vga = (volatile uint16_t*)VGA_ADDRESS;
-    uint16_t color = (Black << 4) | White;
     vga[pos] = (color << 8) | ' ';
     set_cursor(pos);
 }
