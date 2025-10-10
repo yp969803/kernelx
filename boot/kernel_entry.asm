@@ -1,10 +1,11 @@
 [bits 32]
 
-section .multiboot
-    align 4
-    dd 0x1BADB002
-    dd 0x00010003
-    dd -(0x1BADB002 + 0x00010003)
+
+section .multiboot               ;according to multiboot spec
+        dd 0x1BADB002            ;set magic number for
+                                 ;bootloader
+        dd 0x0                   ;set flags
+        dd - (0x1BADB002 + 0x0)  ;set checksum
 
 global _start      ; make this the entry point for linker
 extern main        ; tell assembler that 'main' is in another file
