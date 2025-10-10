@@ -17,7 +17,7 @@ run: iso
 	qemu-system-i386 -cdrom kernelx.iso -m 512M -boot d
 
 # only for debug
-kernel.elf: boot/kernel_entry.o ${OBJ_FILES}
+kernel.elf: ${OBJ_FILES}
 	$(LD) -m elf_i386 -T link.ld -o $@ $^
 	cp kernel.elf iso/boot/kernel.elf
 
