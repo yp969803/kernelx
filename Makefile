@@ -15,7 +15,7 @@ all: run
 
 # Notice how dependencies are built as needed
 kernel.bin: boot/kernel_entry.o ${OBJ_FILES}
-	$(LD) -m elf_i386 -T link.ld -o $@ -Ttext 0x1000 $^ --oformat binary
+	$(LD) -m elf_i386 -T link.ld -o $@ $^ --oformat binary
 
 os-image.bin: boot/mbr.bin kernel.bin
 	cat $^ > $@
