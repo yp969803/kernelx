@@ -5,7 +5,7 @@
 # detect all .o files based on their .c source
 C_SOURCES = $(wildcard kernel/*.c drivers/*.c cpu/*.c)
 HEADERS = $(wildcard kernel/*.h  drivers/*.h cpu/*.h)
-OBJ_FILES = ${C_SOURCES:.c=.o cpu/isr_keyboard.o} 
+OBJ_FILES = ${C_SOURCES:.c=.o cpu/isr_keyboard.o cpu/kernel_entry.o} 
 
 CC ?= x86_64-elf-gcc
 LD ?= x86_64-elf-ld
@@ -13,27 +13,22 @@ LD ?= x86_64-elf-ld
 # First rule is the one executed when no parameters are fed to the Makefile
 all: run
 
-# Notice how dependencies are built as needed
-kernel.bin: boot/kernel_entry.o ${OBJ_FILES}
-	$(LD) -m elf_i386 -T link.ld -o $@ $^ --oformat binary
-
-os-image.bin: boot/mbr.bin kernel.bin
-	cat $^ > $@
-
-run: os-image.bin
-	qemu-system-i386 -fda $<
-
-echo: os-image.bin
-	xxd $<
+run: iso
+	qemu-system-i386 -cdrom kernelx.iso -m 512M -boot d
 
 # only for debug
 kernel.elf: boot/kernel_entry.o ${OBJ_FILES}
 	$(LD) -m elf_i386 -T link.ld -o $@ $^
+	cp kernel.elf iso/boot/kernel.elf
 
-debug: os-image.bin kernel.elf
+iso: kernel.elf
+	grub-mkrescue -o kernelx.iso iso/
+
+
+debug: iso
 	qemu-system-i386 -s -S -fda os-image.bin -d guest_errors,int
 
-run_gdb: os-image.bin kernel.elf
+run_gdb: iso
 	gdb-multiarch -ex "target remote localhost:1234" -ex "symbol-file kernel.elf"
 
 %.o: %.c ${HEADERS}
