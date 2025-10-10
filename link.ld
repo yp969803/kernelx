@@ -1,9 +1,13 @@
+OUTPUT_FORMAT(elf32-i386)
+ENTRY(_start)
+
 SECTIONS
 {
-    . = 0x1000;
+    . = 1M;
 
-    .text : {
-        *(.multiboot_header)
+    .text BLOCK(4K) : ALIGN(4K)
+    {
+        *(.multiboot)
         *(.text*)
     }
 
@@ -20,3 +24,4 @@ SECTIONS
         *(.bss*)
     }
 }
+
