@@ -26,7 +26,7 @@ iso: kernel.elf
 
 
 debug: iso
-	qemu-system-i386 -cdrom kernelx.iso -m 512M -boot d -S -s
+	qemu-system-i386 -cdrom kernelx.iso -m 512M -boot d -S -s -d guest_errors,int
 
 run_gdb: iso
 	gdb-multiarch -ex "target remote localhost:1234" -ex "symbol-file kernel.elf"
