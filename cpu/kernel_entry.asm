@@ -1,14 +1,16 @@
 [bits 32]
 
+MAGIC_NUMBER equ 0x1BADB002
+FLAGS equ (1 << 0) | (1 << 1) 
+CHECKSUM equ -(MAGIC_NUMBER + FLAGS)
 
-section .multiboot               ;according to multiboot spec
-        dd 0x1BADB002            ;set magic number for
-                                 ;bootloader
-        dd 0x1                   ;set flags
-        dd - (0x1BADB002 + 0x1)  ;set checksum
+section .multiboot               
+        dd MAGIC_NUMBER            
+        dd FLAGS                  
+        dd CHECKSUM  
 
-global _start      ; make this the entry point for linker
-extern main        ; tell assembler that 'main' is in another file
+global _start      
+extern main        
 
 section .text
 _start:
