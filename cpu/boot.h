@@ -1,7 +1,7 @@
 #include <stdint.h>
 
 struct multiboot_header {
-  uint32_t flags;
+    uint32_t flags;
 	uint32_t mem_lower;
 	uint32_t mem_upper;
 	uint32_t boot_device;
@@ -31,5 +31,10 @@ typedef struct {
 	uint32_t size;
 	uint64_t base_addr;
 	uint64_t length;
+#define MULTIBOOT_MEMORY_AVAILABLE              1
+#define MULTIBOOT_MEMORY_RESERVED               2
+#define MULTIBOOT_MEMORY_ACPI_RECLAIMABLE       3
+#define MULTIBOOT_MEMORY_NVS                    4
+#define MULTIBOOT_MEMORY_BADRAM                 5
 	uint32_t type;
 } __attribute__ ((packed)) mboot_memmap_t;
