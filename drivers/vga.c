@@ -130,6 +130,6 @@ void vga_print_hex(uint32_t num) {
 
   for (int i = 28; i >= 0; i -= 4) {
     char c = hex_chars[(num >> i) & 0xF];
-    vga_print_hex(c);
+    vga_put_char(c);
   }
 }
