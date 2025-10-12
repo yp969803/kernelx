@@ -1,3 +1,5 @@
+#pragma once
+
 #include <stdint.h>
 
 struct multiboot_header {
@@ -27,7 +29,7 @@ struct multiboot_header {
 	uint32_t vbe_interface_len;
 } __attribute__ ((packed));
 
-typedef struct {
+struct mboot_memmap_t{
 	uint32_t size;
 	uint64_t base_addr;
 	uint64_t length;
@@ -37,4 +39,4 @@ typedef struct {
 #define MULTIBOOT_MEMORY_NVS                    4
 #define MULTIBOOT_MEMORY_BADRAM                 5
 	uint32_t type;
-} __attribute__ ((packed)) mboot_memmap_t;
+} __attribute__ ((packed));

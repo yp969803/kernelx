@@ -90,3 +90,46 @@ void vga_remove_char(void){
     vga[pos] = (color << 8) | ' ';
     set_cursor(pos);
 }
+
+static void get_digits(char *buf, int num, int *i) {
+  if (num == 0) {
+    buf[(*i)++] = '0';
+    return;
+  }
+
+  int is_negative = 0;
+  if (num < 0) {
+    is_negative = 1;
+    num = -num;
+  }
+
+  while (num > 0) {
+    buf[(*i)++] = '0' + (num % 10);
+    num /= 10;
+  }
+
+  if (is_negative) {
+    buf[(*i)++] = '-';
+  }
+}
+
+void vga_print_int(int num) {
+  char buf[12];
+  int i = 0;
+  get_digits(buf, num, &i);
+
+  while (i--) {
+    vga_put_char(buf[i]);
+  }
+}
+
+void vga_print_hex(uint32_t num) {
+  char hex_chars[] = "0123456789ABCDEF";
+
+  vga_print_string("0x");
+
+  for (int i = 28; i >= 0; i -= 4) {
+    char c = hex_chars[(num >> i) & 0xF];
+    vga_print_hex(c);
+  }
+}

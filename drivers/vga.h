@@ -33,3 +33,5 @@ void enable_cursor(uint8_t cursor_start, uint8_t cursor_end);
 void vga_put_char(uint8_t c);
 void vga_print_string(const char* str);
 void vga_remove_char(void);
+void vga_print_int(int num);
+void vga_print_hex(uint32_t num);
