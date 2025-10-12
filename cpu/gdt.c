@@ -27,7 +27,7 @@ void initGdt(void){
     gdt_flush((uint32_t)&gdt_ptr);
 }
 
-void getGdtEntry(uint32_t num, uint32_t base, uint32_t limit, uint8_t access, uint8_t flags){
+void setGdtEntry(uint32_t num, uint32_t base, uint32_t limit, uint8_t access, uint8_t flags){
     gdt_entries[num].base_low    = (base & 0xFFFF);
     gdt_entries[num].base_middle = (base >> 16) & 0xFF;
     gdt_entries[num].base_high   = (base >> 24) & 0xFF;
