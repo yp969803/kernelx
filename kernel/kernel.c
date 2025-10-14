@@ -12,6 +12,7 @@ void main(uint32_t magic, struct multiboot_header* mb_addr) {
     }
     if(!(mb_addr->flags & (1 << 6))){
         vga_print_string("Memory Info not provided by bootloader!\n");
+        return;
     }
     initGdt();
 
