@@ -5,7 +5,7 @@
 
 #define MULTIBOOT_BOOTLOADER_MAGIC 0x2BADB002
 
-void main(uint32_t magic, struct multiboot_header* mb_addr) {
+void main(uint32_t magic, struct multiboot_info* mb_addr) {
     if (magic != MULTIBOOT_BOOTLOADER_MAGIC ) {
         vga_print_string("Invalid magic number from bootloader!\n");
         return;
