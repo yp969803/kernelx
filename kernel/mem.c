@@ -24,3 +24,8 @@ void memory_copy(void *src, void *dest, size_t nbytes) {
         *(d + i) = *(s + i);
     }
 }
+
+void memset(void *dst, uint8_t val, uint32_t count){
+    uint8_t *temp = (uint8_t *)dst;
+    for( ; count != 0; count--) *temp++ = val;
+}

@@ -14,3 +14,10 @@
 
 .flush
     ret
+
+global tss_flush
+
+  tss_flush:
+    mov ax, 0x2B     ; TSS segment selector (your TSS_SEG from GDT)
+    ltr ax           ; load the TSS
+    ret 
