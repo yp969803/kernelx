@@ -30,6 +30,7 @@ void initGdt(void){
     writeTSS(5, 0x10, 0x0); // TSS Segment TSS=0x0028
 
     gdt_flush((uint32_t)&gdt_ptr);
+    tss_flush();
 }
 
 void setGdtEntry(uint32_t num, uint32_t base, uint32_t limit, uint8_t access, uint8_t flags){
@@ -45,14 +46,16 @@ void setGdtEntry(uint32_t num, uint32_t base, uint32_t limit, uint8_t access, ui
 }
 
 void writeTSS(uint32_t num, uint16_t ss0, uint32_t esp0){
-    uint32_t base = (uint32_t)&tss_entry;
+    uint32_t base = (uint32_t) &tss_entry;
     uint32_t limit = base + sizeof(tss_entry);
+
     setGdtEntry(num, base, limit, 0xE9, 0x00);
     mem_set(&tss_entry, 0, sizeof(tss_entry));
-    tss_entry.ss0  = ss0;  
-    tss_entry.esp0 = esp0; 
-    tss_entry.cs   = 0x08 | 0x03;
-    tss_entry.ss = tss_entry.ds = tss_entry.es = tss_entry.fs = tss_entry.gs = 0x10 | 0x03;
-    tss_flush();
+
+    tss_entry.ss0 = ss0;
+    tss_entry.esp0 = esp0;
+
+    tss_entry.cs = 0x08 | 0x3;
+    tss_entry.ss = tss_entry.ds = tss_entry.es = tss_entry.fs = tss_entry.gs = 0x10 | 0x3;
 }
 
