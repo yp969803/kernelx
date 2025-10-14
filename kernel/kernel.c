@@ -22,7 +22,7 @@ void main(uint32_t magic, struct multiboot_info* mb_addr) {
     
     idt_init();
 
-    init_memory(mb_addr);
+    // init_memory(mb_addr);
     
     while(1) {
         __asm__ __volatile__("hlt"); 

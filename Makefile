@@ -31,6 +31,9 @@ debug: iso
 run_gdb: iso
 	gdb-multiarch -ex "target remote localhost:1234" -ex "symbol-file kernel.elf"
 
+run_bochs: iso
+	bochs -f bochsrc
+
 %.o: %.c ${HEADERS}
 	$(CC) -g -m32 -ffreestanding -fno-pie -fno-stack-protector -O1 -c $< -o $@ # -g for debugging
 

@@ -1,0 +1,6 @@
+romimage: file=BIOS-bochs-latest
+vgaromimage: file=VGABIOS-lgpl-latest
+ata0-slave: type=cdrom, path=kernelx.iso, status=inserted
+boot:cdrom
+display_library: x, options = "gui_debug"
+
