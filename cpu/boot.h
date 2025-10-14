@@ -8,7 +8,7 @@ struct multiboot_aout_symbol_table
   uint32_t strsize;
   uint32_t addr;
   uint32_t reserved;
-};
+} __attribute__((packed));
 
 struct multiboot_elf_section_header_table
 {
@@ -16,7 +16,7 @@ struct multiboot_elf_section_header_table
   uint32_t size;
   uint32_t addr;
   uint32_t shndx;
-};
+} __attribute__((packed));
 
 struct multiboot_info{
     uint32_t flags;
@@ -50,7 +50,7 @@ struct multiboot_info{
     uint16_t vbe_interface_seg;
     uint16_t vbe_interface_off;
     uint16_t vbe_interface_len;
-};
+} __attribute__((packed));
 
 struct multiboot_mmap_entry
 {

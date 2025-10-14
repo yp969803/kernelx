@@ -1,4 +1,5 @@
 #include "mem.h"
+#include "../drivers/vga.h"
 
 void* memmove(void* dest, const void* src, size_t n) {
     uint8_t* d = (uint8_t*)dest;
@@ -28,4 +29,15 @@ void memory_copy(void *src, void *dest, size_t nbytes) {
 void mem_set(void *dst, uint8_t val, size_t count){
     uint8_t *temp = (uint8_t *)dst;
     for( ; count != 0; count--) *temp++ = val;
+}
+
+void init_memory(struct multiboot_info* mb_info) {
+    for(uint32_t i = 0; i < mb_info->mmap_length; i+=sizeof(struct multiboot_mmap_entry)) {
+        struct multiboot_mmap_entry* entry = (struct multiboot_mmap_entry*)(mb_info->mmap_addr + i);
+        vga_print_hex(entry->addr_low);
+        vga_print_string(" - ");
+        vga_print_hex(entry->addr_low + entry->len_low);
+        vga_print_string(" : ");
+
+    }
 }
