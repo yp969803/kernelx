@@ -26,7 +26,6 @@ void main(uint32_t magic, struct multiboot_info* mb_addr) {
     uint32_t physicalAllocStart = (mod1 + 0xFFF) & ~0xFFF;
     
     init_memory(mb_addr->mem_upper*1024, physicalAllocStart);
-    vga_print_string("Kernel initialized successfully!\n");
     
     while(1) {
         __asm__ __volatile__("hlt"); 
