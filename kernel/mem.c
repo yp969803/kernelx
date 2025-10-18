@@ -127,7 +127,7 @@ void memMapPage(uint32_t virtualAddr, uint32_t physAddr, uint32_t flags) {
       }
     }
 
-    uint32_t pdIndex = (virtualAddr >> 22) & 0x3FF;
+    uint32_t pdIndex = (virtualAddr >> 22);
     uint32_t ptIndex = (virtualAddr >> 12) & 0x3FF; 
 
     uint32_t* pageDir = REC_PAGEDIR;
