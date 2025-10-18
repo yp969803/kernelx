@@ -2,6 +2,7 @@
 #include "../drivers/vga.h"
 #include "../cpu/boot.h"
 #include "../cpu/gdt.h"
+#include "kmalloc.h"
 #include "mem.h"
 
 #define MULTIBOOT_BOOTLOADER_MAGIC 0x2BADB002
