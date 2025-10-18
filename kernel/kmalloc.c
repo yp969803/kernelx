@@ -26,4 +26,3 @@ void kmallocInit(uint32_t initialHeapSize){
     kmallocInitialized = true;
     changeHeapSize(initialHeapSize);
 }
-
