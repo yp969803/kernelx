@@ -26,6 +26,7 @@ void main(uint32_t magic, struct multiboot_info* mb_addr) {
     uint32_t physicalAllocStart = (mod1 + 0xFFF) & ~0xFFF;
     
     init_memory(mb_addr->mem_upper*1024, physicalAllocStart);
+    kmallocInit(0x1000);
     
     while(1) {
         __asm__ __volatile__("hlt"); 
