@@ -7,7 +7,7 @@ static uint32_t heapSize;
 static uint32_t threshold;
 static bool kmallocInitialized = false;
 
-void changeHeapSize(int newSize){
+void increaseHeapSize(int newSize){
     uint32_t oldPageTop = CEIL_DIV(heapSize, PAGE_SIZE);
     uint32_t newPageTop = CEIL_DIV(newSize, PAGE_SIZE);
     uint32_t diff = newPageTop - oldPageTop;
@@ -24,5 +24,5 @@ void kmallocInit(uint32_t initialHeapSize){
     heapSize = 0;
     threshold = 0;
     kmallocInitialized = true;
-    changeHeapSize(initialHeapSize);
+    increaseHeapSize(initialHeapSize);
 }
