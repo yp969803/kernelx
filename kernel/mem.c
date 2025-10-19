@@ -92,6 +92,18 @@ uint32_t pmmAllocPageFrame(void){
     return 0; 
 }
 
+void pmmFreePageFrame(uint32_t addr){
+  
+    uint32_t frameIndex = addr / PAGE_SIZE;      
+    uint32_t byteIndex  = frameIndex / 8;     
+    uint32_t bitIndex   = frameIndex % 8;    
+
+    physicalMemoryBitmap[byteIndex] &= ~(1 << bitIndex);
+
+    if(totalAlloc > 0){
+        totalAlloc--;
+    }
+}
 
 uint32_t* memGetCurrentPageDir() {
     uint32_t pd;
