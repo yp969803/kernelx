@@ -10,6 +10,7 @@
 #define PAGE_FLAG_PRESENT (1<<0)
 #define PAGE_FLAG_WRITE (1<<1)
 #define PAGE_FLAG_OWNER (1 << 9)
+#define PAGE_FLAG_GLOBAL (1 << 8)
 #define PAGE_SIZE 0x1000
 #define REC_PAGEDIR ((uint32_t*)0xFFFFF000)
 #define REC_PAGETABLE(i) ((uint32_t*) (0xFFC00000 + ((i) << 12)))
