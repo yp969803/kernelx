@@ -92,9 +92,9 @@ uint32_t pmmAllocPageFrame(void){
     return 0; 
 }
 
-void pmmFreePageFrame(uint32_t addr){
+void pmmFreePageFrame(uint32_t paddr){
   
-    uint32_t frameIndex = addr / PAGE_SIZE;      
+    uint32_t frameIndex = paddr / PAGE_SIZE;      
     uint32_t byteIndex  = frameIndex / 8;     
     uint32_t bitIndex   = frameIndex % 8;    
 
