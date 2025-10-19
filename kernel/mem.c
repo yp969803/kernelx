@@ -137,6 +137,7 @@ void memMapPage(uint32_t virtualAddr, uint32_t physAddr, uint32_t flags) {
       if(prevPageDir != initial_page_dir) {
           memChangePageDir(initial_page_dir);
       }
+      flags |= PAGE_FLAG_GLOBAL;
     }
 
     uint32_t pdIndex = (virtualAddr >> 22);
