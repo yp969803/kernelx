@@ -27,3 +27,4 @@ uint32_t pmmAllocPageFrame(void);
 void memMapPage(uint32_t virtualAddr, uint32_t physAddr, uint32_t flags);
 void pmmFreePageFrame(uint32_t paddr);
 uint32_t* getPhyFmAddress(uint32_t virtualAddr);
+void memUnMapPage(uint32_t virtualAddr);

@@ -168,6 +168,47 @@ void memMapPage(uint32_t virtualAddr, uint32_t physAddr, uint32_t flags) {
     }
 }
 
+void memUnMapPage(uint32_t virtualAddr) {
+    uint32_t *prevPageDir = 0;
+
+    if(virtualAddr >= KERNEL_START) {
+      prevPageDir = memGetCurrentPageDir();
+      if(prevPageDir != initial_page_dir) {
+          memChangePageDir(initial_page_dir);
+      }
+    }
+
+    uint32_t pdIndex = (virtualAddr >> 22);
+    uint32_t ptIndex = (virtualAddr >> 12) & 0x3FF; 
+
+    uint32_t* pageDir = REC_PAGEDIR;
+    
+    if (!(pageDir[pdIndex] & PAGE_FLAG_PRESENT)){
+        return;
+    }
+
+    uint32_t* pt = REC_PAGETABLE(pdIndex);
+    if (!(pt[ptIndex] & PAGE_FLAG_PRESENT)){
+        return;
+    }
+
+    uint32_t physAddr = pt[ptIndex] & ~0xFFF;
+    pmmFreePageFrame(physAddr);
+
+    pt[ptIndex] = 0;
+    
+    mem_num_vpages--;
+    invalidate(virtualAddr);
+
+    if (prevPageDir != 0){
+        syncPageDirs();
+
+        if (prevPageDir != initial_page_dir){
+            memChangePageDir(prevPageDir);
+        }
+    }
+}
+
 // getPhyFmAddress returns the physical frame address mapped to the given virtual address.
 uint32_t* getPhyFmAddress(uint32_t virtualAddr){
     uint32_t pdIndex = (virtualAddr >> 22);

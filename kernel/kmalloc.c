@@ -19,6 +19,17 @@ void increaseHeapSize(int newSize){
     heapSize = newSize;
 }
 
+void decreaseHeapSize(int newSize){
+    uint32_t oldPageTop = CEIL_DIV(heapSize, PAGE_SIZE);
+    uint32_t newPageTop = CEIL_DIV(newSize, PAGE_SIZE);
+    uint32_t diff = oldPageTop - newPageTop;
+
+    for(uint32_t i=0; i< diff; i++) {
+        memUnMapPage(KERNEL_MALLOC + newPageTop * 0x1000 + i * 0x1000);
+    }
+    heapSize = newSize;
+}
+
 void kmallocInit(uint32_t initialHeapSize){
     heapStart = KERNEL_MALLOC;
     heapSize = 0;
