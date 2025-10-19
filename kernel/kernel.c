@@ -7,6 +7,8 @@
 
 #define MULTIBOOT_BOOTLOADER_MAGIC 0x2BADB002
 
+extern uint32_t _kernel_end;
+
 void main(uint32_t magic, struct multiboot_info* mb_addr) {
     if (magic != MULTIBOOT_BOOTLOADER_MAGIC ) {
         vga_print_string("Invalid magic number from bootloader!\n");
@@ -23,9 +25,10 @@ void main(uint32_t magic, struct multiboot_info* mb_addr) {
     
     idt_init();
 
-    uint32_t mod1 = *(uint32_t*)(mb_addr->mods_addr+4);
-    uint32_t physicalAllocStart = (mod1 + 0xFFF) & ~0xFFF;
-    
+    // uint32_t mod1 = *(uint32_t*)(mb_addr->mods_addr+4);
+    // uint32_t physicalAllocStart = (mod1 + 0xFFF) & ~0xFFF;
+    uint32_t physicalAllocStart = ((uint32_t)&_kernel_end - 0xC0000000 + 0xFFF) & ~0xFFF;
+
     init_memory(mb_addr->mem_upper*1024, physicalAllocStart);
     kmallocInit(0x1000);
     
