@@ -167,3 +167,21 @@ void memMapPage(uint32_t virtualAddr, uint32_t physAddr, uint32_t flags) {
         }
     }
 }
+
+// getPhyFmAddress returns the physical frame address mapped to the given virtual address.
+uint32_t* getPhyFmAddress(uint32_t virtualAddr){
+    uint32_t pdIndex = (virtualAddr >> 22);
+    uint32_t ptIndex = (virtualAddr >> 12) & 0x3FF; 
+
+    uint32_t* pageDir = REC_PAGEDIR;
+    if (!(pageDir[pdIndex] & PAGE_FLAG_PRESENT)){
+        return 0; 
+    }
+
+    uint32_t* pt = REC_PAGETABLE(pdIndex);
+    if (!(pt[ptIndex] & PAGE_FLAG_PRESENT)){
+        return 0; 
+    }
+
+    return (uint32_t*)(pt[ptIndex] & ~0xFFF); 
+}
