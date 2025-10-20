@@ -74,4 +74,5 @@ void* kmalloc(uint32_t size){
         }
         current = current->next;
     }
+    return NULL;
 }
