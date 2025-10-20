@@ -138,3 +138,25 @@ void free(void* ptr){
         }
     }
 }
+
+void* krealloc(void* ptr, uint32_t size){
+    if(ptr == NULL){
+        return kmalloc(size);
+    }
+    if(size == 0){
+        free(ptr);
+        return NULL;
+    }
+
+    KmallocHeader* header = (KmallocHeader*)((uint32_t)ptr - sizeof(KmallocHeader));
+    if(header->size >= size){
+        return ptr; // Current block is sufficient
+    }
+
+    void* newPtr = kmalloc(size);
+    if(newPtr != NULL){
+        memory_copy(ptr, newPtr, size);
+        free(ptr);
+    }
+    return newPtr;
+}
