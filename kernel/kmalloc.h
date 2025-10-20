@@ -18,3 +18,4 @@ typedef struct KmallocHeader {
 
 void kmallocInit(uint32_t initialHeapSize);
 void* kmalloc(uint32_t size);
+void free(void* ptr);
