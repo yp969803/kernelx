@@ -36,4 +36,42 @@ void kmallocInit(uint32_t initialHeapSize){
     threshold = 0;
     kmallocInitialized = true;
     increaseHeapSize(initialHeapSize);
+    KmallocHeader* header = (KmallocHeader*)heapStart;
+    header->size = heapSize - sizeof(KmallocHeader);
+    header->free = true;
+    header->next = NULL;
+    header->prev = NULL;
+}
+
+void* kmalloc(uint32_t size){
+    if(!kmallocInitialized){
+        return NULL;
+    }
+
+    if(size == 0){
+        return NULL;
+    }
+
+    KmallocHeader* current = (KmallocHeader*)heapStart;
+    while(current != NULL){
+        if(current->free && current->size >= size){
+            if(current->size >= size + sizeof(KmallocHeader) + 4){
+                KmallocHeader* newHeader = (KmallocHeader*)((uint32_t)current + sizeof(KmallocHeader) + size);
+                newHeader->size = current->size - size - sizeof(KmallocHeader);
+                newHeader->free = true;
+                newHeader->next = current->next;
+                newHeader->prev = current;
+
+                if(current->next != NULL){
+                    current->next->prev = newHeader;
+                }
+
+                current->next = newHeader;
+                current->size = size;
+            }
+            current->free = false;
+            return (void*)((uint32_t)current + sizeof(KmallocHeader));
+        }
+        current = current->next;
+    }
 }
