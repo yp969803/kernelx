@@ -42,11 +42,7 @@ void kmallocInit(uint32_t initialHeapSize){
 }
 
 void* kmalloc(uint32_t size){
-    if(!kmallocInitialized){
-        return NULL;
-    }
-
-    if(size == 0){
+    if(size == 0 || !kmallocInitialized){
         return NULL;
     }
 
@@ -114,4 +110,31 @@ void* kmalloc(uint32_t size){
         }
     }
     return NULL;
+}
+
+void free(void* ptr){
+    if(ptr == NULL || !kmallocInitialized){
+        return;
+    }
+
+    KmallocHeader* header = (KmallocHeader*)((uint32_t)ptr - sizeof(KmallocHeader));
+    header->free = true;
+
+    // Coalesce with next block if free
+    if(header->next != NULL && header->next->free){
+        header->size += sizeof(KmallocHeader) + header->next->size;
+        header->next = header->next->next;
+        if(header->next != NULL){
+            header->next->prev = header;
+        }
+    }
+
+    // Coalesce with previous block if free
+    if(header->prev != NULL && header->prev->free){
+        header->prev->size += sizeof(KmallocHeader) + header->size;
+        header->prev->next = header->next;
+        if(header->next != NULL){
+            header->next->prev = header->prev;
+        }
+    }
 }
