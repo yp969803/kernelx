@@ -74,5 +74,7 @@ void* kmalloc(uint32_t size){
         }
         current = current->next;
     }
+
+    // TODO: Implement heap expansion if no suitable block is found
     return NULL;
 }
