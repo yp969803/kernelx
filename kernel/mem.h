@@ -6,7 +6,7 @@
 #include "../cpu/boot.h"
 
 #define KERNEL_START 0xc0000000
-#define KERNEL_MALLOC 0xd0000000
+#define HEAP_START 0xd0000000
 #define PAGE_FLAG_PRESENT (1<<0)
 #define PAGE_FLAG_WRITE (1<<1)
 #define PAGE_FLAG_OWNER (1 << 9)

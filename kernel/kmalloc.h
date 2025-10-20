@@ -3,6 +3,12 @@
 #include <stdint.h>
 #include <stdbool.h>
 
+#define HEAP_END 0xD4000000
+
+#define ALIGNMENT 8
+#define ALIGN(x) (((x) + (ALIGNMENT - 1)) & ~(ALIGNMENT - 1))
+
+
 typedef struct KmallocHeader {
     uint32_t size; // In bytes
     bool free;

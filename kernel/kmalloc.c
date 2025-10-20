@@ -4,7 +4,6 @@
 
 static uint32_t heapStart;
 static uint32_t heapSize;
-static uint32_t threshold;
 static bool kmallocInitialized = false;
 
 void increaseHeapSize(int newSize){
@@ -14,7 +13,7 @@ void increaseHeapSize(int newSize){
 
     for(uint32_t i=0; i< diff; i++) {
         uint32_t phys = pmmAllocPageFrame();
-        memMapPage(KERNEL_MALLOC + oldPageTop * 0x1000 + i * 0x1000, phys, PAGE_FLAG_WRITE);
+        memMapPage(HEAP_START + oldPageTop * 0x1000 + i * 0x1000, phys, PAGE_FLAG_WRITE);
     }
     heapSize = newSize;
 }
@@ -25,15 +24,14 @@ void decreaseHeapSize(int newSize){
     uint32_t diff = oldPageTop - newPageTop;
 
     for(uint32_t i=0; i< diff; i++) {
-        memUnMapPage(KERNEL_MALLOC + newPageTop * 0x1000 + i * 0x1000);
+        memUnMapPage(HEAP_START + newPageTop * 0x1000 + i * 0x1000);
     }
     heapSize = newSize;
 }
 
 void kmallocInit(uint32_t initialHeapSize){
-    heapStart = KERNEL_MALLOC;
+    heapStart = HEAP_START;
     heapSize = 0;
-    threshold = 0;
     kmallocInitialized = true;
     increaseHeapSize(initialHeapSize);
     KmallocHeader* header = (KmallocHeader*)heapStart;
@@ -52,10 +50,12 @@ void* kmalloc(uint32_t size){
         return NULL;
     }
 
+    size = ALIGN(size);
+
     KmallocHeader* current = (KmallocHeader*)heapStart;
     while(current != NULL){
         if(current->free && current->size >= size){
-            if(current->size >= size + sizeof(KmallocHeader) + 4){
+            if(current->size >= size + sizeof(KmallocHeader) + ALIGNMENT){
                 KmallocHeader* newHeader = (KmallocHeader*)((uint32_t)current + sizeof(KmallocHeader) + size);
                 newHeader->size = current->size - size - sizeof(KmallocHeader);
                 newHeader->free = true;
@@ -75,6 +75,43 @@ void* kmalloc(uint32_t size){
         current = current->next;
     }
 
-    // TODO: Implement heap expansion if no suitable block is found
+    while(heapSize < HEAP_END - HEAP_START){
+        uint32_t oldHeapSize = heapSize;
+        increaseHeapSize(heapSize + PAGE_SIZE);
+        KmallocHeader* newHeader = (KmallocHeader*)(heapStart + oldHeapSize);
+        newHeader->size = PAGE_SIZE - sizeof(KmallocHeader);
+        newHeader->free = true;
+        newHeader->next = NULL;
+        newHeader->prev = NULL;
+
+        // Link the new header to the existing list
+        KmallocHeader* last = (KmallocHeader*)heapStart;
+        while(last->next != NULL){
+            last = last->next;
+        }
+        last->next = newHeader;
+        newHeader->prev = last;
+
+        // Try to allocate again
+        current = newHeader;
+        if(current->free && current->size >= size){
+            if(current->size >= size + sizeof(KmallocHeader) + ALIGNMENT){
+                KmallocHeader* splitHeader = (KmallocHeader*)((uint32_t)current + sizeof(KmallocHeader) + size);
+                splitHeader->size = current->size - size - sizeof(KmallocHeader);
+                splitHeader->free = true;
+                splitHeader->next = current->next;
+                splitHeader->prev = current;
+
+                if(current->next != NULL){
+                    current->next->prev = splitHeader;
+                }
+
+                current->next = splitHeader;
+                current->size = size;
+            }
+            current->free = false;
+            return (void*)((uint32_t)current + sizeof(KmallocHeader));
+        }
+    }
     return NULL;
 }
