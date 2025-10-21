@@ -1,6 +1,8 @@
 
 [bits 32]
 
+section .text
+
 global isr_keyboard
 extern keyboard_handler_c   ; defined in C
 
