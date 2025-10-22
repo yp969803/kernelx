@@ -112,7 +112,7 @@ void* kmalloc(uint32_t size){
     return NULL;
 }
 
-void free(void* ptr){
+void kfree(void* ptr){
     if(ptr == NULL || !kmallocInitialized){
         return;
     }
