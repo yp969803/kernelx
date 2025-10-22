@@ -7,7 +7,7 @@ section .text
 global page_fault
 extern page_fault_handler_c   ; defined in C
 
-isr_keyboard:
+page_fault:
     pusha                   ; push eax, ecx, edx, ebx, esp, ebp, esi, edi
     push ds
     push es
