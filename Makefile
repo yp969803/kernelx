@@ -52,5 +52,6 @@ clean:
 	$(RM) boot/*.o boot/*.bin
 	$(RM) drivers/*.o
 	$(RM) cpu/*.o
+	$(RM) stdlib/*.o
 	$(RM) iso/boot/*.elf
 	$(RM) kernelx.iso
