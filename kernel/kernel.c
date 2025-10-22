@@ -4,6 +4,7 @@
 #include "../cpu/gdt.h"
 #include "kmalloc.h"
 #include "mem.h"
+#include "utils.h"
 
 #define MULTIBOOT_BOOTLOADER_MAGIC 0x2BADB002
 
@@ -33,6 +34,6 @@ void main(uint32_t magic, struct multiboot_info* mb_addr) {
     kmallocInit(0x1000);
     
     while(1) {
-        __asm__ __volatile__("hlt"); 
+        halt();
     }
 }

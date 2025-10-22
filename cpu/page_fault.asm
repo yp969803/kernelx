@@ -20,7 +20,10 @@ page_fault:
     mov fs, ax
     mov gs, ax
 
-    call page_fault_handler_c ; jump into your C handler
+    mov eax, [esp + 48]   ; get the error code
+    push eax              ; pass it as argument to C function
+    call page_fault_handler_c
+    add esp, 4            ; clean up argument
 
     pop gs
     pop fs
