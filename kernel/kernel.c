@@ -1,7 +1,7 @@
 #include "../cpu/idt.h"
-#include "../drivers/vga.h"
 #include "../cpu/boot.h"
 #include "../cpu/gdt.h"
+#include "../stdlib/stdio.h"
 #include "kmalloc.h"
 #include "mem.h"
 #include "utils.h"
@@ -12,11 +12,11 @@ extern uint32_t _kernel_end;
 
 void main(uint32_t magic, struct multiboot_info* mb_addr) {
     if (magic != MULTIBOOT_BOOTLOADER_MAGIC ) {
-        vga_print_string("Invalid magic number from bootloader!\n");
+        kprintf("Invalid magic number from bootloader!\n");
         return;
     }
     if(!(mb_addr->flags & (1 << 6))){
-        vga_print_string("Memory Info not provided by bootloader!\n");
+        kprintf("Memory Info not provided by bootloader!\n");
         return;
     }
     initGdt();

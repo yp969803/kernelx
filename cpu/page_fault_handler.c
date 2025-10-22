@@ -1,5 +1,5 @@
-#include "../drivers/vga.h"
 #include "../kernel/utils.h"
+#include "../stdlib/stdio.h"
 
 static inline uint32_t get_cr2(void) {
     uint32_t val;
@@ -8,12 +8,7 @@ static inline uint32_t get_cr2(void) {
 }
 
 void page_fault_handler_c(uint32_t error_code) {
-    vga_print_string("Page Fault Exception Occurred!\n");
-    vga_print_string("Faulting Address: ");
     uint32_t faulting_address = get_cr2();
-    vga_print_hex(faulting_address);
-    vga_print_string("\nError Code: ");
-    vga_print_hex(error_code);
-    vga_print_string("\n");
+    kprintf("Page Fault Exception Occurred, Error Code: %x, Faulting Address %x\n", error_code, faulting_address);
     panic();
 }
