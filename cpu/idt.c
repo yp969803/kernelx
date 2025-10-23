@@ -67,3 +67,6 @@ void idt_init(void) {
     set_interrupt();
 }
 
+void exception_handler_c(uint32_t exception_no, uint32_t error_code) {
+    
+}
