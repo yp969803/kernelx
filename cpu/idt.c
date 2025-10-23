@@ -42,8 +42,8 @@ static inline void pic_remap(void) {
     outb(0x21, 0x01);
     outb(0xA1, 0x01);
 
-    // Only unmask keyboard interrupt (IRQ1)
-    outb(0x21, 0xFF & ~0x02); // bit 1 = 0 (unmask), others = 1 (masked)
+    // Unmask IRQ0 (timer) and IRQ1 (keyboard)
+    outb(0x21, 0xFF & ~(0x01 | 0x02)); 
     outb(0xA1, 0xFF);
 }
 
