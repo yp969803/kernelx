@@ -1,6 +1,7 @@
 #include "idt.h"
 #include "io.h"
 #include "page_fault.h"
+#include "divide_zero.h"
 
 // Exceptios isr
 extern void exception_isr0(void);
@@ -144,5 +145,10 @@ void exception_handler_c(uint32_t exception_no, uint32_t error_code) {
     if(exception_no == 0x0E){
         // Page Fault
         page_fault_handler_c(error_code);
+    }
+
+    if(exception_no == 0x00){
+        // Divide by zero
+        divide_zero_handler_c();
     }
 }
