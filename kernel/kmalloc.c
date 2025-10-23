@@ -144,7 +144,7 @@ void* krealloc(void* ptr, uint32_t size){
         return kmalloc(size);
     }
     if(size == 0){
-        free(ptr);
+        kfree(ptr);
         return NULL;
     }
 
@@ -156,7 +156,7 @@ void* krealloc(void* ptr, uint32_t size){
     void* newPtr = kmalloc(size);
     if(newPtr != NULL){
         memory_copy(ptr, newPtr, size);
-        free(ptr);
+        kfree(ptr);
     }
     return newPtr;
 }

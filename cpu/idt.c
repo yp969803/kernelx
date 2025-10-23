@@ -4,6 +4,7 @@
 // ISR for keyboard interrupt
 extern void isr_keyboard(void);      // ISR defined in assembly (or change name to isr_keyboard)
 extern void page_fault(void);
+extern void isr_pit(void);
 
 struct IDTEntry idt[IDT_SIZE];
 
@@ -58,6 +59,7 @@ void idt_init(void) {
 
     set_idt_entry(0x21, (uint32_t)isr_keyboard, KERNEL_CS, 0x8E);
     set_idt_entry(0x0E, (uint32_t)page_fault, KERNEL_CS, 0x8E);
+    set_idt_entry(0x20, (uint32_t)isr_pit, KERNEL_CS, 0x8E);
 
     // finally load the IDT
     load_idt();
