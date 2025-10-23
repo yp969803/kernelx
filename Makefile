@@ -5,7 +5,7 @@
 # detect all .o files based on their .c source
 C_SOURCES = $(wildcard kernel/*.c drivers/*.c cpu/*.c stdlib/*.c)
 HEADERS = $(wildcard kernel/*.h  drivers/*.h cpu/*.h stdlib/*.h)
-OBJ_FILES = ${C_SOURCES:.c=.o cpu/isr_keyboard.o cpu/kernel_entry.o cpu/gdt.o cpu/page_fault.o cpu/isr_pit.o} 
+OBJ_FILES = ${C_SOURCES:.c=.o cpu/isr_keyboard.o cpu/kernel_entry.o cpu/gdt.o cpu/exception_isr.o cpu/isr_pit.o} 
 
 CC ?= x86_64-elf-gcc
 LD ?= x86_64-elf-ld
