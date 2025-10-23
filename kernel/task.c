@@ -69,3 +69,18 @@ thread_control_block* create_task(void (*entry_point)(void), uint32_t* page_dir)
 
     return tcb;
 }
+
+void schedule(void) {
+    if (!current_task_TCB || !current_task_TCB->next)
+        return;
+
+    thread_control_block* next = current_task_TCB->next;
+
+    if (next == current_task_TCB)
+        return; 
+
+    current_task_TCB->state = TASK_READY;
+    next->state = TASK_RUNNING;
+
+    switch_to_task(next);
+}
