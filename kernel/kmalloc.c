@@ -80,16 +80,24 @@ void* kmalloc(uint32_t size){
         newHeader->next = NULL;
         newHeader->prev = NULL;
 
-        // Link the new header to the existing list
         KmallocHeader* last = (KmallocHeader*)heapStart;
         while(last->next != NULL){
             last = last->next;
         }
-        last->next = newHeader;
-        newHeader->prev = last;
+        if(last->free){
+            current = last;
+            last->size += sizeof(KmallocHeader) + newHeader->size;
+            if(last->prev && last->prev->free){
+                last->prev->size += sizeof(KmallocHeader) + last->size;
+                last->prev->next = NULL;
+                current = last->prev;
+            }
+        }else{
+            current=newHeader;
+            last->next = newHeader;
+            newHeader->prev = last;
+        }
 
-        // Try to allocate again
-        current = newHeader;
         if(current->free && current->size >= size){
             if(current->size >= size + sizeof(KmallocHeader) + ALIGNMENT){
                 KmallocHeader* splitHeader = (KmallocHeader*)((uint32_t)current + sizeof(KmallocHeader) + size);

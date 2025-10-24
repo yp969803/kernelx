@@ -3,7 +3,7 @@
 #include <stdint.h>
 #include <stdbool.h>
 
-#define HEAP_END 0xD4000000
+#define HEAP_END 0xDFFFFFFF
 
 #define ALIGNMENT 8
 #define ALIGN(x) (((x) + (ALIGNMENT - 1)) & ~(ALIGNMENT - 1))
