@@ -22,7 +22,7 @@ static inline uint32_t* get_cr3(){
 
 void initialize_multitasking(void) {
     current_task_TCB = kmalloc(sizeof(thread_control_block));
-    memset(current_task_TCB, 0, sizeof(thread_control_block));
+    mem_set(current_task_TCB, 0, sizeof(thread_control_block));
 
     current_task_TCB->esp = get_esp();
     current_task_TCB->cr3 = get_cr3();
@@ -32,24 +32,22 @@ void initialize_multitasking(void) {
     task_list_head = current_task_TCB;
 }
 
-thread_control_block* create_task(void (*entry_point)(void), uint32_t* page_dir) {
+thread_control_block* create_task(void * (*entry_point) (void), uint32_t* page_dir) {
 
     thread_control_block* tcb = kmalloc(sizeof(thread_control_block));
-    memset(tcb, 0, sizeof(thread_control_block));
+    mem_set(tcb, 0, sizeof(thread_control_block));
 
     uint32_t* stack = kmalloc(KERNEL_STACK_SIZE);
     uint32_t* stack_top = stack + KERNEL_STACK_SIZE/4;
 
     *(--stack_top) = (uint32_t)entry_point;  // EIP
-    *(--stack_top) = 0x08;                   // CS
-    *(--stack_top) = 0x202;                  // EFLAGS (IF=1)
-    *(--stack_top) = 0;                      // EAX
-    *(--stack_top) = 0;                      // ECX
-    *(--stack_top) = 0;                      // EDX
-    *(--stack_top) = 0;                      // EBX
-    *(--stack_top) = 0;                      // EBP
-    *(--stack_top) = 0;                      // ESI
-    *(--stack_top) = 0;                      // EDI
+    *(--stack_top) = 0;
+    *(--stack_top) = 0;
+    *(--stack_top) = 0;                     
+    *(--stack_top) = 0;                      
+    *(--stack_top) = 0;                      
+    *(--stack_top) = 0;                      
+    *(--stack_top) = 0;                      
 
     tcb->esp = stack_top;
     tcb->esp0 = stack_top; 

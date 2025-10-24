@@ -5,10 +5,19 @@
 #include "kmalloc.h"
 #include "mem.h"
 #include "utils.h"
+#include "task.h"
 
 #define MULTIBOOT_BOOTLOADER_MAGIC 0x2BADB002
 
 extern uint32_t _kernel_end;
+
+void* task1(){
+    kprintf("Task 1 is running\n");
+    while(1){
+        
+    }
+    return NULL;
+}
 
 void main(uint32_t magic, struct multiboot_info* mb_addr) {
     if (magic != MULTIBOOT_BOOTLOADER_MAGIC ) {
@@ -32,7 +41,11 @@ void main(uint32_t magic, struct multiboot_info* mb_addr) {
 
     init_memory(mb_addr->mem_upper*1024, physicalAllocStart);
     kmallocInit(0x1000);
+    initialize_multitasking();
 
+    create_task(task1, initial_page_dir);
+    schedule();
+    
     while(1) {
         halt();
     }

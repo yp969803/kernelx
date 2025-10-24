@@ -19,5 +19,5 @@ typedef struct thread_control_block{
 } thread_control_block;
 
 void initialize_multitasking(void);
-thread_control_block* create_task(void (*entry_point)(void), uint32_t* page_dir);
+thread_control_block* create_task(void * (*entry_point) (void), uint32_t* page_dir);
 void schedule(void);
