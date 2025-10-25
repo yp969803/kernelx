@@ -25,7 +25,7 @@ switch_to_task:
     mov edi,[current_task_TCB]    
     mov [edi+TCB_ESP],esp
 
-    mov esi,[esp+(4+1)*4]
+    mov esi,[esp+(7+1)*4]
     mov [current_task_TCB],esi   
 
     mov esp,[esi+TCB_ESP]
