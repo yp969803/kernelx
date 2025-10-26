@@ -47,7 +47,8 @@ thread_control_block* create_task(void * (*entry_point) (void), uint32_t* page_d
     *(--stack_top) = 0;                      
     *(--stack_top) = 0;                      
     *(--stack_top) = 0;                      
-    *(--stack_top) = 0;                      
+    *(--stack_top) = 0;   
+     *(--stack_top) = 0;                                         
 
     tcb->esp = stack_top;
     tcb->esp0 = stack_top; 

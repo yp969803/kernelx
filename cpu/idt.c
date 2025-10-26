@@ -2,6 +2,9 @@
 #include "io.h"
 #include "page_fault.h"
 #include "divide_zero.h"
+#include "../stdlib/stdio.h"
+#include "../kernel/utils.h"
+
 
 // Exceptios isr
 extern void exception_isr0(void);
@@ -151,4 +154,6 @@ void exception_handler_c(uint32_t error_code,uint32_t exception_no ) {
         // Divide by zero
         divide_zero_handler_c();
     }
+    kprintf("Exception %d occurred with error code: %d\n", exception_no, error_code);
+    panic();
 }

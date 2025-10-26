@@ -11,6 +11,12 @@
 
 extern uint32_t _kernel_end;
 
+void* task1(void* arg) {
+    kprintf("Task1 is running \n");
+    schedule();
+    return NULL;
+}
+
 void main(uint32_t magic, struct multiboot_info* mb_addr) {
     if (magic != MULTIBOOT_BOOTLOADER_MAGIC ) {
         kprintf("Invalid magic number from bootloader!\n");
@@ -34,7 +40,11 @@ void main(uint32_t magic, struct multiboot_info* mb_addr) {
     init_memory(mb_addr->mem_upper*1024, physicalAllocStart);
     kmallocInit(0x1000);
     initialize_multitasking();
+    create_task(task1, (uint32_t)initial_page_dir-KERNEL_START);
 
+    schedule();
+
+    kprintf("Reached end of main kernel thread\n");
     while(1) {
         halt();
     }

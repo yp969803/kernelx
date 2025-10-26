@@ -14,18 +14,12 @@ extern tss_entry
 section .text
 
 switch_to_task:
-    push eax
-    push ecx
-    push edx
-    push ebx
-    push esi
-    push edi
-    push ebp
+    pushad
 
     mov edi,[current_task_TCB]    
     mov [edi+TCB_ESP],esp
 
-    mov esi,[esp+(7+1)*4]
+    mov esi,[esp+(8+1)*4]
     mov [current_task_TCB],esi   
 
     mov esp,[esi+TCB_ESP]
@@ -39,12 +33,6 @@ switch_to_task:
     mov cr3,eax                  
 .doneVAS:
 
-    pop ebp
-    pop edi
-    pop esi
-    pop ebx
-    pop edx
-    pop ecx
-    pop eax
+    popad
 
     ret
