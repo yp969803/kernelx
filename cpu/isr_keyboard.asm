@@ -7,7 +7,7 @@ global isr_keyboard
 extern keyboard_handler_c   ; defined in C
 
 isr_keyboard:
-    pusha                   ; push eax, ecx, edx, ebx, esp, ebp, esi, edi
+    pushad                   ; push eax, ecx, edx, ebx, esp, ebp, esi, edi
     push ds
     push es
     push fs
@@ -25,7 +25,7 @@ isr_keyboard:
     pop fs
     pop es
     pop ds
-    popa
+    popad
 
     ; Send End Of Interrupt (EOI) to PIC
     mov al, 0x20

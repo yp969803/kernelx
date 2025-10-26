@@ -23,7 +23,7 @@ extern exception_handler_c   ; defined in C
 section .text
 
 common_isr_noerr:
-    pusha                   ; push eax, ecx, edx, ebx, esp, ebp, esi, edi
+    pushad                   ; push eax, ecx, edx, ebx, esp, ebp, esi, edi
     push ds
     push es
     push fs
@@ -46,14 +46,14 @@ common_isr_noerr:
     pop fs
     pop es
     pop ds
-    popa
+    popad
 
     add esp, 8            ; clean up pushed error code and interrupt number
 
     iretd                   ; return from interrupt
 
 common_isr_err:
-    pusha                   ; push eax, ecx, edx, ebx, esp, ebp, esi, edi
+    pushad                   ; push eax, ecx, edx, ebx, esp, ebp, esi, edi
     push ds
     push es
     push fs
@@ -76,7 +76,7 @@ common_isr_err:
     pop fs
     pop es
     pop ds
-    popa
+    popad
 
     add esp, 4            ; clean up pushed error code and interrupt number
 

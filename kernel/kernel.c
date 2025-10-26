@@ -32,7 +32,7 @@ void main(uint32_t magic, struct multiboot_info* mb_addr) {
 
     init_memory(mb_addr->mem_upper*1024, physicalAllocStart);
     kmallocInit(0x1000);
-    
+
     while(1) {
         halt();
     }
