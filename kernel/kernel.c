@@ -11,7 +11,7 @@
 
 extern uint32_t _kernel_end;
 
-void* task1(void* arg) {
+void* task1(void) {
     kprintf("Task1 is running \n");
     exit();
     return NULL;
