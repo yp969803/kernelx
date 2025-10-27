@@ -29,4 +29,4 @@ void initialize_multitasking(void);
 thread_control_block* create_task(void * (*entry_point) (void), uint32_t* page_dir);
 void schedule(void);
 void exit(void);
-void quantum_expired_handler(uint32_t timer_ticks);
+void quantum_expired_handler(void);

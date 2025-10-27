@@ -112,11 +112,11 @@ void exit(void) {
     schedule();
 }
 
-void quantum_expired_handler(uint32_t timer_ticks) {
+void quantum_expired_handler(void) {
     if(!current_task_TCB)
         return;
-    current_task_TCB->time_used += timer_ticks;
-    current_task_TCB->time_quantum -= timer_ticks;
+    current_task_TCB->time_used ++;
+    current_task_TCB->time_quantum --;
     if(current_task_TCB->time_quantum <= 0){
         schedule();
     }

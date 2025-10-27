@@ -32,5 +32,5 @@ void initialize_timer(void){
 
 void pit_handler_c(void){
     time_elapsed_boot++;   
-    quantum_expired_handler(time_elapsed_boot);
+    quantum_expired_handler();
 }
