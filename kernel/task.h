@@ -7,10 +7,13 @@
 typedef enum {
     TASK_READY = 0,
     TASK_RUNNING,
-    TASK_BLOCKED
+    TASK_BLOCKED,
+    TASK_ZOOMBIE
 } task_state_t;
 
 typedef struct thread_control_block{
+    uint32_t id;
+    uint32_t pid;
     uint32_t* esp;
     uint32_t* esp0;
     uint32_t* cr3;

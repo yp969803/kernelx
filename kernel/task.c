@@ -8,6 +8,8 @@ extern void switch_to_task(thread_control_block* next_thread);
 thread_control_block* current_task_TCB = NULL;
 thread_control_block* task_list_head = NULL;
 
+static uint32_t next_id = 2;
+
 static inline uint32_t* get_esp(){
     uint32_t esp;
     asm volatile("mov %%esp, %0" : "=r"(esp));
@@ -30,9 +32,12 @@ void initialize_multitasking(void) {
     current_task_TCB->state = TASK_RUNNING;
     current_task_TCB->next = current_task_TCB;
     task_list_head = current_task_TCB;
+    current_task_TCB->id = 1;
+    current_task_TCB->pid = 0;
+
 }
 
-thread_control_block* create_task(void * (*entry_point) (void), uint32_t* page_dir) {
+thread_control_block* create_task(void * (*entry_point) (void), uint32_t* page_dir, uint32_t pid) {
 
     thread_control_block* tcb = kmalloc(sizeof(thread_control_block));
     mem_set(tcb, 0, sizeof(thread_control_block));
@@ -48,12 +53,14 @@ thread_control_block* create_task(void * (*entry_point) (void), uint32_t* page_d
     *(--stack_top) = 0;                      
     *(--stack_top) = 0;                      
     *(--stack_top) = 0;   
-     *(--stack_top) = 0;                                         
+    *(--stack_top) = 0;                                         
 
     tcb->esp = stack_top;
     tcb->esp0 = stack_top; 
     tcb->cr3 = page_dir;
     tcb->state = TASK_READY;
+    tcb->id = next_id++;
+    tcb->pid = pid;
 
     if (!task_list_head) {
         task_list_head = tcb;
@@ -77,9 +84,22 @@ void schedule(void) {
 
     if (next == current_task_TCB)
         return; 
+    
+    while(next->state != TASK_READY) {
+        next = next->next;
+        if (next == current_task_TCB)
+            return; 
+    }
 
     current_task_TCB->state = TASK_READY;
     next->state = TASK_RUNNING;
 
     switch_to_task(next);
+}
+
+void exit(void) {
+    if(!current_task_TCB)
+        return;
+    current_task_TCB->state = TASK_ZOOMBIE;
+    schedule();
 }
