@@ -37,7 +37,7 @@ void initialize_multitasking(void) {
 
 }
 
-thread_control_block* create_task(void * (*entry_point) (void), uint32_t* page_dir, uint32_t pid) {
+thread_control_block* create_task(void * (*entry_point) (void), uint32_t* page_dir) {
 
     thread_control_block* tcb = kmalloc(sizeof(thread_control_block));
     mem_set(tcb, 0, sizeof(thread_control_block));
@@ -60,8 +60,9 @@ thread_control_block* create_task(void * (*entry_point) (void), uint32_t* page_d
     tcb->cr3 = page_dir;
     tcb->state = TASK_READY;
     tcb->id = next_id++;
-    tcb->pid = pid;
+    tcb->pid = current_task_TCB->pid;
     tcb->stack_base = stack;
+    tcb->time_used = 0;
 
     if (!task_list_head) {
         task_list_head = tcb;

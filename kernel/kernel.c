@@ -6,6 +6,7 @@
 #include "mem.h"
 #include "utils.h"
 #include "task.h"
+#include "../drivers/timer.h"
 
 #define MULTIBOOT_BOOTLOADER_MAGIC 0x2BADB002
 
@@ -40,7 +41,8 @@ void main(uint32_t magic, struct multiboot_info* mb_addr) {
     init_memory(mb_addr->mem_upper*1024, physicalAllocStart);
     kmallocInit(0x1000);
     initialize_multitasking();
-    create_task(task1, INIT_PAGE_DIR_PHY, 1);
+    initialize_timer();
+    create_task(task1, INIT_PAGE_DIR_PHY);
 
     schedule();
 
