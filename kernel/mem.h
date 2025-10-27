@@ -17,7 +17,7 @@
 
 extern uint32_t initial_page_dir[1024];
 
-#define INIT_PAGE_DIR_PHY (uint32_t)initial_page_dir-KERNEL_START
+#define INIT_PAGE_DIR_PHY (uint32_t*)((uint32_t)initial_page_dir-KERNEL_START)
 
 void* memmove(void* dest, const void* src, size_t n);
 void memory_copy(void *src, void *dest, size_t nbytes);
