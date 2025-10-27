@@ -1,12 +1,13 @@
 #include "timer.h"
 #include "../cpu/io.h"
 #include "../stdlib/stdio.h"
+#include "../kernel/task.h"
 
 #define PIT_CHANNEL0 0x40
 #define PIT_COMMAND  0x43
 #define PIT_FREQ     1193182
 
-uint32_t time_elapsed_boot = 0;
+static uint32_t time_elapsed_boot = 0;
 
 void pit_set_timer(uint32_t freq) {
     if(freq == 0) return;
@@ -30,5 +31,6 @@ void initialize_timer(void){
 }
 
 void pit_handler_c(void){
-    time_elapsed_boot++;    
+    time_elapsed_boot++;   
+    quantum_expired_handler(time_elapsed_boot);
 }

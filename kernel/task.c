@@ -34,7 +34,9 @@ void initialize_multitasking(void) {
     task_list_head = current_task_TCB;
     current_task_TCB->id = 1;
     current_task_TCB->pid = 0;
-
+    current_task_TCB->stack_base = NULL;
+    current_task_TCB->time_used = 0;
+    current_task_TCB->time_quantum = TIME_QUANTUM_MS;
 }
 
 thread_control_block* create_task(void * (*entry_point) (void), uint32_t* page_dir) {
@@ -63,6 +65,7 @@ thread_control_block* create_task(void * (*entry_point) (void), uint32_t* page_d
     tcb->pid = current_task_TCB->pid;
     tcb->stack_base = stack;
     tcb->time_used = 0;
+    tcb->time_quantum = TIME_QUANTUM_MS;
 
     if (!task_list_head) {
         task_list_head = tcb;
@@ -96,8 +99,9 @@ void schedule(void) {
     if(current_task_TCB->state == TASK_RUNNING)
         current_task_TCB->state = TASK_READY;
     
+    current_task_TCB->time_quantum = TIME_QUANTUM_MS;
     next->state = TASK_RUNNING;
-
+   
     switch_to_task(next);
 }
 
@@ -106,4 +110,14 @@ void exit(void) {
         return;
     current_task_TCB->state = TASK_ZOOMBIE;
     schedule();
+}
+
+void quantum_expired_handler(uint32_t timer_ticks) {
+    if(!current_task_TCB)
+        return;
+    current_task_TCB->time_used += timer_ticks;
+    current_task_TCB->time_quantum -= timer_ticks;
+    if(current_task_TCB->time_quantum <= 0){
+        schedule();
+    }
 }
