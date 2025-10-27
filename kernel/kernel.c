@@ -13,7 +13,7 @@ extern uint32_t _kernel_end;
 
 void* task1(void* arg) {
     kprintf("Task1 is running \n");
-    schedule();
+    exit();
     return NULL;
 }
 
@@ -44,7 +44,6 @@ void main(uint32_t magic, struct multiboot_info* mb_addr) {
 
     schedule();
 
-    kprintf("Reached end of main kernel thread\n");
     while(1) {
         halt();
     }

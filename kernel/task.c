@@ -61,6 +61,7 @@ thread_control_block* create_task(void * (*entry_point) (void), uint32_t* page_d
     tcb->state = TASK_READY;
     tcb->id = next_id++;
     tcb->pid = pid;
+    tcb->stack_base = stack;
 
     if (!task_list_head) {
         task_list_head = tcb;
@@ -91,7 +92,9 @@ void schedule(void) {
             return; 
     }
 
-    current_task_TCB->state = TASK_READY;
+    if(current_task_TCB->state == TASK_RUNNING)
+        current_task_TCB->state = TASK_READY;
+    
     next->state = TASK_RUNNING;
 
     switch_to_task(next);
