@@ -8,8 +8,6 @@ extern tss_entry
 %define TCB_ESP      0
 %define TCB_ESP0     4
 %define TCB_CR3      8
-%define TCB_NEXT     12
-%define TCB_STATE    16
 
 section .text
 

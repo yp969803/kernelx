@@ -40,7 +40,7 @@ void main(uint32_t magic, struct multiboot_info* mb_addr) {
     init_memory(mb_addr->mem_upper*1024, physicalAllocStart);
     kmallocInit(0x1000);
     initialize_multitasking();
-    create_task(task1, INIT_PAGE_DIR_PHY);
+    create_task(task1, INIT_PAGE_DIR_PHY, 1);
 
     schedule();
 
