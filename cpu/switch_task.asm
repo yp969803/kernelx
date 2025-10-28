@@ -14,6 +14,10 @@ section .text
 
 switch_to_task:
     pushad
+    push ds
+    push es
+    push fs
+    push gs
 
     mov edi,[current_task_TCB]    
     mov [edi+TCB_ESP],esp
@@ -32,6 +36,10 @@ switch_to_task:
     mov cr3,eax                  
 .doneVAS:
 
+    pop ds
+    pop es
+    pop fs
+    pop gs
     popad
 
-    ret
+    iretd
