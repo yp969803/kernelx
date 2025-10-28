@@ -2,6 +2,7 @@
 [bits 32]
 global switch_to_task
 extern current_task_TCB
+extern next_task_TCB
 extern tss_entry
 
 
@@ -17,7 +18,7 @@ switch_to_task:
     mov edi,[current_task_TCB]    
     mov [edi+TCB_ESP],esp
 
-    mov esi,[esp+(8+1)*4]
+    mov esi,[next_task_TCB]
     mov [current_task_TCB],esi   
 
     mov esp,[esi+TCB_ESP]

@@ -3,10 +3,11 @@
 #include "kmalloc.h"
 #include "mem.h"
 
-extern void switch_to_task(thread_control_block* next_thread);
+extern void switch_to_task();
  
 thread_control_block* current_task_TCB = NULL;
 thread_control_block* task_list_head = NULL;
+thread_control_block* next_task_TCB = NULL;
 
 static uint32_t next_id = 2;
 
@@ -102,7 +103,8 @@ void schedule(void) {
     current_task_TCB->time_quantum = TIME_QUANTUM_MS;
     next->state = TASK_RUNNING;
    
-    switch_to_task(next);
+    next_task_TCB = next;
+    switch_to_task();
 }
 
 void exit(void) {
