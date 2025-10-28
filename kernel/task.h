@@ -2,6 +2,8 @@
 
 #include <stdint.h>
 
+#define INITIAL_EFLAGS 0x202
+
 #define KERNEL_STACK_SIZE 0x4000 // 16 KB
 #define TIME_QUANTUM_MS 5
 
