@@ -2,6 +2,7 @@
 #include <stddef.h>
 #include "kmalloc.h"
 #include "mem.h"
+#include "../cpu/idt.h"
 
 extern void switch_to_task();
  
@@ -48,7 +49,10 @@ thread_control_block* create_task(void * (*entry_point) (void), uint32_t* page_d
     uint32_t* stack = kmalloc(KERNEL_STACK_SIZE);
     uint32_t* stack_top = stack + KERNEL_STACK_SIZE/4;
 
+    *(--stack_top) = (uint32_t)INITIAL_EFLAGS;  
+    *(--stack_top) = (uint32_t)KERNEL_CS;  
     *(--stack_top) = (uint32_t)entry_point;  // EIP
+    // pushad
     *(--stack_top) = 0;
     *(--stack_top) = 0;
     *(--stack_top) = 0;                     
@@ -56,7 +60,13 @@ thread_control_block* create_task(void * (*entry_point) (void), uint32_t* page_d
     *(--stack_top) = 0;                      
     *(--stack_top) = 0;                      
     *(--stack_top) = 0;   
-    *(--stack_top) = 0;                                         
+    *(--stack_top) = 0;  
+    
+    // segments
+    *(--stack_top) = 0x10; 
+    *(--stack_top) = 0x10; 
+    *(--stack_top) = 0x10;
+    *(--stack_top) = 0x10; 
 
     tcb->esp = stack_top;
     tcb->esp0 = stack_top; 
