@@ -19,3 +19,6 @@ static inline void panic(void) {
     }
 }
 
+static inline void set_interrupt(void){
+    __asm__ __volatile__("sti");
+}

@@ -85,10 +85,6 @@ static inline void pic_remap(void) {
     outb(0xA1, 0xFF);
 }
 
-static inline void set_interrupt(void){
-    __asm__ __volatile__("sti");
-}
-
 void idt_init(void) {
     // zero out IDT
     for (int i = 0; i < IDT_SIZE; ++i) {
