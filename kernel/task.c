@@ -24,6 +24,17 @@ static inline uint32_t* get_cr3(){
     return (uint32_t*)cr3;
 }
 
+static inline push_interrupt_frame(void){
+    asm volatile(
+    "pushfl\n\t"        // push EFLAGS
+    "mov %%cs, %%ax\n\t"
+    "push %%eax\n\t"    // push CS
+    :
+    :
+    : "ax", "memory"
+    );
+}
+
 void initialize_multitasking(void) {
     current_task_TCB = kmalloc(sizeof(thread_control_block));
     mem_set(current_task_TCB, 0, sizeof(thread_control_block));
@@ -92,38 +103,39 @@ thread_control_block* create_task(void * (*entry_point) (void), uint32_t* page_d
     return tcb;
 }
 
-void schedule(void) {
-    if (!current_task_TCB || !current_task_TCB->next)
-        return;
-    
+void set_next_task(){
     current_task_TCB->time_quantum = TIME_QUANTUM_MS;
-
     thread_control_block* next = current_task_TCB->next;
-
     if (next == current_task_TCB)
+        next_task_TCB = current_task_TCB;
         return; 
-    
+
     while(next->state != TASK_READY) {
         next = next->next;
         if (next == current_task_TCB)
+            next_task_TCB = current_task_TCB;
             return; 
     }
 
     if(current_task_TCB->state == TASK_RUNNING)
         current_task_TCB->state = TASK_READY;
-    
-    next->state = TASK_RUNNING;
-   
-    next_task_TCB = next;
 
-    asm volatile(
-    "pushfl\n\t"        // push EFLAGS
-    "mov %%cs, %%ax\n\t"
-    "push %%eax\n\t"    // push CS
-    :
-    :
-    : "ax", "memory"
-    );
+    next->state = TASK_RUNNING;
+
+    next_task_TCB = next;
+}
+
+void schedule(void) {
+    if (!current_task_TCB || !current_task_TCB->next)
+        return;
+    
+    set_next_task();
+
+    if(current_task_TCB == next_task_TCB){
+        return;
+    }
+
+    push_interrupt_frame();
     switch_to_task();
 }
 
@@ -140,22 +152,8 @@ void quantum_expired_handler(void) {
     current_task_TCB->time_used ++;
     current_task_TCB->time_quantum --;
     if(current_task_TCB->time_quantum <= 0){
-        current_task_TCB->time_quantum = TIME_QUANTUM_MS;
-        thread_control_block* next = current_task_TCB->next;
-        if (next == current_task_TCB)
-            return; 
-    
-        while(next->state != TASK_READY) {
-            next = next->next;
-            if (next == current_task_TCB)
-                return; 
-        }
-
-        if(current_task_TCB->state == TASK_RUNNING)
-            current_task_TCB->state = TASK_READY;
-
-        next->state = TASK_RUNNING;
-
-        next_task_TCB = next;
+        set_next_task();
+    }else{
+        next_task_TCB = current_task_TCB;
     }
 }

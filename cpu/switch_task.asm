@@ -13,6 +13,7 @@ extern tss_entry
 section .text
 
 switch_to_task:
+    cli
     pushad
     push ds
     push es
@@ -20,9 +21,12 @@ switch_to_task:
     push gs
 
     mov edi,[current_task_TCB]    
-    mov [edi+TCB_ESP],esp
-
     mov esi,[next_task_TCB]
+
+    cmp edi, esi
+    je .doneVAS
+
+    mov [edi+TCB_ESP],esp
     mov [current_task_TCB],esi   
 
     mov esp,[esi+TCB_ESP]
@@ -41,5 +45,6 @@ switch_to_task:
     pop fs
     pop gs
     popad
-
+    
+    sti
     iretd
