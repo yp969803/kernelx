@@ -9,6 +9,8 @@ kernelx is a simple lightweight 32bit x86 linux kernel, designed to run in small
 - Keyboard
 - VGA Text Mode
 - Timer
+- Muti-tasking
+- Preemptive Scheduling
 
 ## Installations for ubuntu
 
