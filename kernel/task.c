@@ -24,7 +24,7 @@ static inline uint32_t* get_cr3(){
     return (uint32_t*)cr3;
 }
 
-static inline push_interrupt_frame(void){
+static inline void push_interrupt_frame(void){
     asm volatile(
     "pushfl\n\t"        // push EFLAGS
     "mov %%cs, %%ax\n\t"
