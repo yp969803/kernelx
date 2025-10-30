@@ -5,7 +5,8 @@
 // Default color: Black background, White foreground
 static uint16_t color = (Black << 4) | White;
 
-void clear_screen(void) {
+void clear_screen(void) 
+{
     volatile uint16_t* video = (uint16_t*)VGA_ADDRESS;
     uint16_t blank = (color << 8) | ' ';
     for (int i = 0; i < VGA_WIDTH * VGA_HEIGHT; i++) { 
@@ -14,7 +15,8 @@ void clear_screen(void) {
     set_cursor(0);
 }
 
-void set_cursor(uint16_t pos) {
+void set_cursor(uint16_t pos) 
+{
     outb(VGA_INDEX_PORT, 0x0f);             // Select low byte
     outb(VGA_DATA_PORT, (uint8_t)(pos & 0xff));
 
@@ -47,7 +49,8 @@ void enable_cursor(uint8_t cursor_start, uint8_t cursor_end)
 	outb(VGA_DATA_PORT, (inb(VGA_DATA_PORT) & 0xe0) | cursor_end);
 }
 
-void vga_put_char(uint8_t c) {
+void vga_put_char(uint8_t c) 
+{
     volatile uint16_t* vga = (volatile uint16_t*)VGA_ADDRESS;
     uint16_t pos = get_cursor_position();
 
@@ -74,7 +77,8 @@ void vga_put_char(uint8_t c) {
     set_cursor(pos);
 }
 
-void vga_print_string(const char* str) {
+void vga_print_string(const char* str) 
+{
     int i = 0;
     while (str[i] != '\0') {
         vga_put_char(str[i]);
@@ -82,7 +86,8 @@ void vga_print_string(const char* str) {
     }   
 }
 
-void vga_remove_char(void){
+void vga_remove_char(void)
+{
     uint16_t pos = get_cursor_position();
     if(pos == 0) return;
     pos--;
@@ -91,7 +96,8 @@ void vga_remove_char(void){
     set_cursor(pos);
 }
 
-static void get_digits(char *buf, int num, int *i) {
+static void get_digits(char *buf, int num, int *i) 
+{
   if (num == 0) {
     buf[(*i)++] = '0';
     return;
@@ -113,7 +119,8 @@ static void get_digits(char *buf, int num, int *i) {
   }
 }
 
-void vga_print_int(int num) {
+void vga_print_int(int num) 
+{
   char buf[12];
   int i = 0;
   get_digits(buf, num, &i);
@@ -123,7 +130,8 @@ void vga_print_int(int num) {
   }
 }
 
-void vga_print_hex(uint32_t num) {
+void vga_print_hex(uint32_t num) 
+{
   char hex_chars[] = "0123456789ABCDEF";
 
   vga_print_string("0x");

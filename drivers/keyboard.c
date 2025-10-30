@@ -32,7 +32,8 @@ static const char shift_keymap[60] = {
 
 static bool shift_pressed = false;
 
-void keyboard_handler_c(void) {
+void keyboard_handler_c(void) 
+{
     uint8_t scancode = inb(KEYBOARD_DATA_PORT);
 
     if(scancode==LEFT_SHIFT || scancode==RIGHT_SHIFT){

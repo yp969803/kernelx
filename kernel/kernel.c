@@ -12,14 +12,16 @@
 
 extern uint32_t _kernel_end;
 
-void* task1(void) {
+void* task1(void) 
+{
     
     kprintf("Task 1 is running\n");
     exit();
     return NULL;
 }
 
-void main(uint32_t magic, struct multiboot_info* mb_addr) {
+void main(uint32_t magic, struct multiboot_info* mb_addr) 
+{
     if (magic != MULTIBOOT_BOOTLOADER_MAGIC ) {
         kprintf("Invalid magic number from bootloader!\n");
         return;

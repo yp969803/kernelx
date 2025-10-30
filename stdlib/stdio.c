@@ -1,7 +1,8 @@
 #include "stdio.h"
 
 
-void kprintf(const char *format, ...) {
+void kprintf(const char *format, ...) 
+{
     va_list args;
     va_start(args, format);
     for (const char *p = format; *p; p++){

@@ -8,7 +8,8 @@ struct gdt_entry_struct gdt_entries[6];
 struct gdt_ptr_struct   gdt_ptr;
 struct tss_entry_struct tss_entry;
 
-void initGdt(void){
+void initGdt(void)
+{
     gdt_ptr.limit = (sizeof(struct gdt_entry_struct) * 6) - 1;
     gdt_ptr.base  = (uint32_t)&gdt_entries;
 
@@ -33,7 +34,8 @@ void initGdt(void){
     tss_flush();
 }
 
-void setGdtEntry(uint32_t num, uint32_t base, uint32_t limit, uint8_t access, uint8_t flags){
+void setGdtEntry(uint32_t num, uint32_t base, uint32_t limit, uint8_t access, uint8_t flags)
+{
     gdt_entries[num].base_low    = (base & 0xFFFF);
     gdt_entries[num].base_middle = (base >> 16) & 0xFF;
     gdt_entries[num].base_high   = (base >> 24) & 0xFF;
@@ -45,7 +47,8 @@ void setGdtEntry(uint32_t num, uint32_t base, uint32_t limit, uint8_t access, ui
     gdt_entries[num].access      = access;
 }
 
-void writeTSS(uint32_t num, uint16_t ss0, uint32_t esp0){
+void writeTSS(uint32_t num, uint16_t ss0, uint32_t esp0)
+{
     uint32_t base = (uint32_t) &tss_entry;
     uint32_t limit = base + sizeof(tss_entry);
 

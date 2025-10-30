@@ -9,7 +9,8 @@
 
 static uint32_t time_elapsed_boot = 0;
 
-void pit_set_timer(uint32_t freq) {
+void pit_set_timer(uint32_t freq) 
+{
     if(freq == 0) return;
     uint16_t count = (uint16_t)(PIT_FREQ / freq);
     outb(PIT_COMMAND, 0x36); 
@@ -17,7 +18,8 @@ void pit_set_timer(uint32_t freq) {
     outb(PIT_CHANNEL0, (count >> 8) & 0xFF); 
 }
 
-void pit_set_delay(uint32_t freq) {
+void pit_set_delay(uint32_t freq) 
+{
     if (freq == 0) return;
     uint16_t count = (uint16_t)(PIT_FREQ / freq);
     outb(PIT_COMMAND, 0x38);
@@ -25,12 +27,14 @@ void pit_set_delay(uint32_t freq) {
     outb(PIT_CHANNEL0, (count >> 8) & 0xFF);
 }
 
-void initialize_timer(void){
+void initialize_timer(void)
+{
     pit_set_timer(1000);
     time_elapsed_boot = 0;
 }
 
-void pit_handler_c(void){
+void pit_handler_c(void)
+{
     time_elapsed_boot++;   
     quantum_expired_handler();
 }

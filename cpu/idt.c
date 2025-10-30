@@ -48,7 +48,8 @@ struct IDTEntry idt[IDT_SIZE];
 
 static struct IDTPtr idt_ptr;
 
-void set_idt_entry(int n, uint32_t isr_address, uint16_t selector, uint8_t type_attr) {
+void set_idt_entry(int n, uint32_t isr_address, uint16_t selector, uint8_t type_attr) 
+{
     idt[n].offset_low  = (uint16_t)(isr_address & 0xFFFF);
     idt[n].selector    = selector;
     idt[n].zero        = 0;
@@ -56,13 +57,15 @@ void set_idt_entry(int n, uint32_t isr_address, uint16_t selector, uint8_t type_
     idt[n].offset_high = (uint16_t)((isr_address >> 16) & 0xFFFF);
 }
 
-static inline void load_idt(void) {
+static inline void load_idt(void) 
+{
     idt_ptr.limit = sizeof(idt) - 1;
     idt_ptr.base  = (uint32_t)&idt;
     asm volatile ("lidt %0" : : "m"(idt_ptr));  // load the IDT
 }
 
-static inline void pic_remap(void) {
+static inline void pic_remap(void) 
+{
 
     // Start initialization sequence (cascade mode)
     outb(0x20, 0x11);
@@ -85,7 +88,8 @@ static inline void pic_remap(void) {
     outb(0xA1, 0xFF);
 }
 
-void idt_init(void) {
+void idt_init(void) 
+{
     // zero out IDT
     for (int i = 0; i < IDT_SIZE; ++i) {
         set_idt_entry(i, 0, 0, 0);
@@ -136,7 +140,8 @@ void idt_init(void) {
     set_interrupt();
 }
 
-void exception_handler_c(uint32_t error_code,uint32_t exception_no ) {
+void exception_handler_c(uint32_t error_code,uint32_t exception_no ) 
+{
     if(exception_no<0 || exception_no >31){
         return;
     }
@@ -150,6 +155,7 @@ void exception_handler_c(uint32_t error_code,uint32_t exception_no ) {
         // Divide by zero
         divide_zero_handler_c();
     }
+    
     kprintf("Exception %d occurred with error code: %d\n", exception_no, error_code);
     panic();
 }

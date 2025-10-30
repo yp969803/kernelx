@@ -6,7 +6,8 @@ static uint32_t heapStart;
 static uint32_t heapSize;
 static bool kmallocInitialized = false;
 
-void increaseHeapSize(int newSize){
+void increaseHeapSize(int newSize)
+{
     uint32_t oldPageTop = CEIL_DIV(heapSize, PAGE_SIZE);
     uint32_t newPageTop = CEIL_DIV(newSize, PAGE_SIZE);
     uint32_t diff = newPageTop - oldPageTop;
@@ -18,7 +19,8 @@ void increaseHeapSize(int newSize){
     heapSize = newSize;
 }
 
-void decreaseHeapSize(int newSize){
+void decreaseHeapSize(int newSize)
+{
     uint32_t oldPageTop = CEIL_DIV(heapSize, PAGE_SIZE);
     uint32_t newPageTop = CEIL_DIV(newSize, PAGE_SIZE);
     uint32_t diff = oldPageTop - newPageTop;
@@ -29,7 +31,8 @@ void decreaseHeapSize(int newSize){
     heapSize = newSize;
 }
 
-void kmallocInit(uint32_t initialHeapSize){
+void kmallocInit(uint32_t initialHeapSize)
+{
     heapStart = HEAP_START;
     heapSize = 0;
     kmallocInitialized = true;
@@ -41,7 +44,8 @@ void kmallocInit(uint32_t initialHeapSize){
     header->prev = NULL;
 }
 
-void* kmalloc(uint32_t size){
+void* kmalloc(uint32_t size)
+{
     if(size == 0 || !kmallocInitialized){
         return NULL;
     }
@@ -120,7 +124,8 @@ void* kmalloc(uint32_t size){
     return NULL;
 }
 
-void kfree(void* ptr){
+void kfree(void* ptr)
+{
     if(ptr == NULL || !kmallocInitialized){
         return;
     }
@@ -147,10 +152,12 @@ void kfree(void* ptr){
     }
 }
 
-void* krealloc(void* ptr, uint32_t size){
+void* krealloc(void* ptr, uint32_t size)
+{
     if(ptr == NULL){
         return kmalloc(size);
     }
+
     if(size == 0){
         kfree(ptr);
         return NULL;

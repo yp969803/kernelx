@@ -16,7 +16,8 @@ static uint32_t pageDirs[NUM_PAGES_DIRS][1024] __attribute__((aligned(4096)));
 static uint8_t pageDirUsed[NUM_PAGES_DIRS];
 
 
-void* memmove(void* dest, const void* src, size_t n) {
+void* memmove(void* dest, const void* src, size_t n) 
+{
     uint8_t* d = (uint8_t*)dest;
     const uint8_t* s = (const uint8_t*)src;
 
@@ -32,7 +33,8 @@ void* memmove(void* dest, const void* src, size_t n) {
 }
 
 
-void memory_copy(void *src, void *dest, size_t nbytes) {
+void memory_copy(void *src, void *dest, size_t nbytes) 
+{
     uint8_t* d = (uint8_t*)dest;
     const uint8_t* s = (const uint8_t*)src;
     int i;
@@ -41,13 +43,15 @@ void memory_copy(void *src, void *dest, size_t nbytes) {
     }
 }
 
-void mem_set(void *dst, uint8_t val, size_t count){
+void mem_set(void *dst, uint8_t val, size_t count)
+{
     uint8_t *temp = (uint8_t *)dst;
     for( ; count != 0; count--) *temp++ = val;
 }
 
 
-void pmm_init(uint32_t memLow, uint32_t memHigh){
+void pmm_init(uint32_t memLow, uint32_t memHigh)
+{
     pageFrameMin  = CEIL_DIV(memLow, PAGE_SIZE);
     pageFrameMax  = memHigh / PAGE_SIZE;
     totalAlloc = 0;
@@ -55,11 +59,13 @@ void pmm_init(uint32_t memLow, uint32_t memHigh){
     mem_set(pageDirUsed, 0, sizeof(pageDirUsed));
 }
 
-void invalidate(uint32_t vaddr){
+void invalidate(uint32_t vaddr)
+{
     asm volatile("invlpg %0"::"m"(vaddr));
 }
 
-void init_memory(uint32_t memHigh, uint32_t physicalAllocStart) {
+void init_memory(uint32_t memHigh, uint32_t physicalAllocStart) 
+{
    mem_num_vpages = 0;
    initial_page_dir[0] = 0;
    invalidate(0);
@@ -68,7 +74,8 @@ void init_memory(uint32_t memHigh, uint32_t physicalAllocStart) {
    pmm_init(physicalAllocStart, memHigh);
 }
 
-uint32_t pmmAllocPageFrame(void){
+uint32_t pmmAllocPageFrame(void)
+{
     uint32_t start = pageFrameMin/ 8 + ((pageFrameMin & 7)!= 0 ? 1 : 0);
     uint32_t end = pageFrameMax / 8 - ((pageFrameMax & 7) != 0 ? 1 : 0);
     for(uint32_t b = start ; b< end; b++){
@@ -92,7 +99,8 @@ uint32_t pmmAllocPageFrame(void){
     return 0; 
 }
 
-void pmmFreePageFrame(uint32_t paddr){
+void pmmFreePageFrame(uint32_t paddr)
+{
   
     uint32_t frameIndex = paddr / PAGE_SIZE;      
     uint32_t byteIndex  = frameIndex / 8;     
@@ -105,14 +113,16 @@ void pmmFreePageFrame(uint32_t paddr){
     }
 }
 
-uint32_t* memGetCurrentPageDir() {
+uint32_t* memGetCurrentPageDir() 
+{
     uint32_t pd;
     asm volatile("mov %%cr3, %0":"=r"(pd));
     pd += KERNEL_START;
     return (uint32_t*)pd;
 }
 
-void memChangePageDir(uint32_t* pd){
+void memChangePageDir(uint32_t* pd)
+{
     pd = (uint32_t*) (((uint32_t)pd)-KERNEL_START);
     asm volatile("mov %0, %%eax \n mov %%eax, %%cr3 \n" :: "m"(pd));
 }
@@ -129,7 +139,8 @@ void syncPageDirs(){
     }
 }
 
-void memMapPage(uint32_t virtualAddr, uint32_t physAddr, uint32_t flags) {
+void memMapPage(uint32_t virtualAddr, uint32_t physAddr, uint32_t flags) 
+{
     uint32_t *prevPageDir = 0;
 
     if(virtualAddr >= KERNEL_START) {
@@ -168,7 +179,8 @@ void memMapPage(uint32_t virtualAddr, uint32_t physAddr, uint32_t flags) {
     }
 }
 
-void memUnMapPage(uint32_t virtualAddr) {
+void memUnMapPage(uint32_t virtualAddr) 
+{
     uint32_t *prevPageDir = 0;
 
     if(virtualAddr >= KERNEL_START) {
@@ -210,7 +222,8 @@ void memUnMapPage(uint32_t virtualAddr) {
 }
 
 // getPhyFmAddress returns the physical frame address mapped to the given virtual address.
-uint32_t* getPhyFmAddress(uint32_t virtualAddr){
+uint32_t* getPhyFmAddress(uint32_t virtualAddr)
+{
     uint32_t pdIndex = (virtualAddr >> 22);
     uint32_t ptIndex = (virtualAddr >> 12) & 0x3FF; 
 
