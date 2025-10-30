@@ -58,7 +58,7 @@ void initialize_multitasking(void)
     next_task_TCB = current_task_TCB;
 }
 
-thread_control_block* create_task(void * (*entry_point) (void), uint32_t* page_dir) 
+thread_control_block* create_task(void * (*entry_point) (void*), void* args ,uint32_t* page_dir) 
 {
 
     thread_control_block* tcb = kmalloc(sizeof(thread_control_block));
@@ -67,6 +67,8 @@ thread_control_block* create_task(void * (*entry_point) (void), uint32_t* page_d
     uint32_t* stack = kmalloc(KERNEL_STACK_SIZE);
     uint32_t* stack_top = stack + KERNEL_STACK_SIZE/4;
 
+    *(--stack_top) = (uint32_t)args;    
+    *(--stack_top) = 0; // fake return address 
     *(--stack_top) = (uint32_t)INITIAL_EFLAGS;  
     *(--stack_top) = (uint32_t)KERNEL_CS;  
     *(--stack_top) = (uint32_t)entry_point;  // EIP

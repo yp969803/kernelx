@@ -12,7 +12,7 @@
 
 extern uint32_t _kernel_end;
 
-void* task1(void) 
+void* task1(void* args) 
 {
     
     kprintf("Task 1 is running\n");
@@ -45,7 +45,7 @@ void main(uint32_t magic, struct multiboot_info* mb_addr)
     kmallocInit(0x1000);
     initialize_multitasking();
     initialize_timer();
-    create_task(task1, INIT_PAGE_DIR_PHY);
+    create_task(task1, NULL, INIT_PAGE_DIR_PHY);
     
     while(1) {
         halt();
