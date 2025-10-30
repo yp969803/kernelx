@@ -106,20 +106,23 @@ thread_control_block* create_task(void * (*entry_point) (void), uint32_t* page_d
 void set_next_task(){
     current_task_TCB->time_quantum = TIME_QUANTUM_MS;
     thread_control_block* next = current_task_TCB->next;
-    if (next == current_task_TCB)
+    if (next == current_task_TCB){
         next_task_TCB = current_task_TCB;
         return; 
+    }
 
     while(next->state != TASK_READY) {
         next = next->next;
-        if (next == current_task_TCB)
+        if (next == current_task_TCB){
             next_task_TCB = current_task_TCB;
             return; 
+        }
     }
 
-    if(current_task_TCB->state == TASK_RUNNING)
+    if(current_task_TCB->state == TASK_RUNNING){
         current_task_TCB->state = TASK_READY;
-
+    }
+    
     next->state = TASK_RUNNING;
 
     next_task_TCB = next;
