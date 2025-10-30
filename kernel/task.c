@@ -54,6 +54,8 @@ void initialize_multitasking(void)
     current_task_TCB->stack_base = NULL;
     current_task_TCB->time_used = 0;
     current_task_TCB->time_quantum = TIME_QUANTUM_MS;
+
+    next_task_TCB = current_task_TCB;
 }
 
 thread_control_block* create_task(void * (*entry_point) (void), uint32_t* page_dir) 
