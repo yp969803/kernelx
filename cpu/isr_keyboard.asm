@@ -13,13 +13,13 @@ isr_keyboard:
     push fs
     push gs
 
-    mov ax, 0x10            ; kernel data segment selector (your DATA_SEG from GDT)
+    mov ax, 0x10            ; kernel data segment selector 
     mov ds, ax
     mov es, ax
     mov fs, ax
     mov gs, ax
 
-    call keyboard_handler_c ; jump into your C handler
+    call keyboard_handler_c 
 
     pop gs
     pop fs
@@ -31,4 +31,4 @@ isr_keyboard:
     mov al, 0x20
     out 0x20, al
 
-    iretd                   ; return from interrupt
+    iretd                  

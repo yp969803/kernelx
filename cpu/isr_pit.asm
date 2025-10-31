@@ -24,7 +24,7 @@ isr_pit:
     push fs
     push gs
 
-    mov ax, 0x10            ; kernel data segment selector (your DATA_SEG from GDT)
+    mov ax, 0x10            ; kernel data segment selector 
     mov ds, ax
     mov es, ax
     mov fs, ax

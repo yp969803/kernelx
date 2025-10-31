@@ -4,7 +4,7 @@
     mov eax, [esp + 4] ; get pointer to gdt_descriptor
     lgdt [eax]         ; load the GDT
 
-    mov eax, 0x10     ; load the data segment selector (your DATA_SEG from GDT)
+    mov eax, 0x10     ; load the data segment selector
     mov ds, ax
     mov es, ax
     mov fs, ax
@@ -18,6 +18,6 @@
 global tss_flush
 
   tss_flush:
-    mov ax, 0x2B     ; TSS segment selector (your TSS_SEG from GDT)
+    mov ax, 0x2B     ; TSS segment selector
     ltr ax           ; load the TSS
     ret 

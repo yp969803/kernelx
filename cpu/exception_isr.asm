@@ -29,7 +29,7 @@ common_isr_noerr:
     push fs
     push gs
 
-    mov ax, DATA_SEG            ; kernel data segment selector (your DATA_SEG from GDT)
+    mov ax, DATA_SEG            ; kernel data segment selector 
     mov ds, ax
     mov es, ax
     mov fs, ax
@@ -50,7 +50,7 @@ common_isr_noerr:
 
     add esp, 8            ; clean up pushed error code and interrupt number
 
-    iretd                   ; return from interrupt
+    iretd
 
 common_isr_err:
     pushad                   ; push eax, ecx, edx, ebx, esp, ebp, esi, edi
@@ -70,7 +70,7 @@ common_isr_err:
     mov eax, [esp + 56]   ; get the error code
     push eax              ; pass it as argument to C function
     call exception_handler_c
-    add esp, 8            ; clean up argument
+    add esp, 8
 
     pop gs
     pop fs
@@ -78,9 +78,9 @@ common_isr_err:
     pop ds
     popad
 
-    add esp, 4            ; clean up pushed error code and interrupt number
+    add esp, 4              ; clean up pushed error code and interrupt number
 
-    iretd                   ; return from interrupt
+    iretd                  
 
 ISR_NOERR 0 
 ISR_NOERR 1

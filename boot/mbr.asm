@@ -1,7 +1,6 @@
 [bits 16]
 [org 0x7c00]
 
-; where to load the kernel to
 KERNEL_OFFSET equ 0x1000
 
 ; BIOS sets boot drive in 'dl'; store for later use
@@ -31,7 +30,7 @@ load_kernel:
 [bits 32]
 BEGIN_32BIT:
     call KERNEL_OFFSET ; give control to the kernel
-    jmp $ ; loop in case kernel returns
+    jmp $ 
 
 ; boot drive variable
 BOOT_DRIVE db 0
