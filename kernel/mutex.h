@@ -15,6 +15,6 @@ typedef struct mutex {
     mutex_wait_node *wait_queue_tail;
 } mutex;
 
-void mutex_init(mutex *m);
+mutex *mutex_init(void);
 void mutex_lock(mutex *m);
 void mutex_unlock(mutex *m);
