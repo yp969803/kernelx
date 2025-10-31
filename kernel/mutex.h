@@ -1,7 +1,7 @@
 #pragma once
 
-#include <stdint.h>
 #include "task.h"
+#include <stdint.h>
 
 typedef struct mutex_wait_node {
     thread_control_block *task;

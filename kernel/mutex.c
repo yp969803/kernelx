@@ -1,29 +1,29 @@
-#include <stdint.h>
-#include <stddef.h>
-#include <stdbool.h>
 #include "mutex.h"
+#include <stdbool.h>
+#include <stddef.h>
+#include <stdint.h>
 
-
-static inline bool atomic_compare_exchange(uint32_t *ptr, uint32_t *expected, uint32_t desired) {
+static inline bool atomic_compare_exchange(uint32_t *ptr, uint32_t *expected, uint32_t desired)
+{
     unsigned char success;
 
-    __asm__ volatile (
-        "lock cmpxchgl %3, %1\n\t"
-        "sete %0"                     
-        : "=q"(success), "+m"(*ptr), "+a"(*expected)
-        : "r"(desired)
-        : "memory"
-    );
+    __asm__ volatile("lock cmpxchgl %3, %1\n\t"
+                     "sete %0"
+                     : "=q"(success), "+m"(*ptr), "+a"(*expected)
+                     : "r"(desired)
+                     : "memory");
 
     return success;
 }
 
-void mutex_init(mutex *m)
+mutex *mutex_init(void)
 {
-    m->count            = 1;
-    m->owner            = NULL;
-    m->wait_queue_head  = NULL;
-    m->wait_queue_tail  = NULL;
+    mutex *m           = kmalloc(sizeof(mutex));
+    m->count           = 1;
+    m->owner           = NULL;
+    m->wait_queue_head = NULL;
+    m->wait_queue_tail = NULL;
+    return m;
 }
 
 void mutex_lock(mutex *m)
@@ -53,7 +53,7 @@ void mutex_lock(mutex *m)
 void mutex_unlock(mutex *m)
 {
     if (m->owner != current_task_TCB) {
-        return; 
+        return;
     }
 
     if (m->wait_queue_head) {
