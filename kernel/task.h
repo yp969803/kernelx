@@ -7,7 +7,7 @@
 #define KERNEL_STACK_SIZE 0x4000 // 16 KB
 #define TIME_QUANTUM_MS 5
 
-typedef enum { TASK_READY = 0, TASK_RUNNING, TASK_BLOCKED, TASK_ZOOMBIE} task_state_t;
+typedef enum { TASK_READY = 0, TASK_RUNNING, TASK_BLOCKED, TASK_ZOOMBIE } task_state_t;
 
 typedef struct thread_control_block {
     uint32_t *esp;
@@ -21,7 +21,6 @@ typedef struct thread_control_block {
     uint32_t time_used; // in ms
     int time_quantum;   // in ms
 } thread_control_block;
-
 
 extern thread_control_block *current_task_TCB;
 

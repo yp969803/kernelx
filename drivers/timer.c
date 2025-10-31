@@ -1,8 +1,9 @@
 #include "timer.h"
-#include <stddef.h>
 #include "../cpu/io.h"
+#include "../kernel/kmalloc.h"
 #include "../kernel/task.h"
 #include "../stdlib/stdio.h"
+#include <stddef.h>
 
 #define PIT_CHANNEL0 0x40
 #define PIT_COMMAND 0x43
@@ -39,33 +40,34 @@ void initialize_timer(void)
     time_elapsed_boot = 0;
 }
 
-void sleep_wake(void){
-    if(sleep_list_head == NULL) {
+void sleep_wake(void)
+{
+    if (sleep_list_head == NULL) {
         return;
     }
     sleep_info *current = sleep_list_head;
-    sleep_info *prev = NULL;
-    while(current != NULL) {
-        if(current->wake_time <= time_elapsed_boot) {
+    sleep_info *prev    = NULL;
+    while (current != NULL) {
+        if (current->wake_time <= time_elapsed_boot) {
             current->task->state = TASK_READY;
 
-            if(prev == NULL) {
+            if (prev == NULL) {
                 sleep_list_head = current->next;
-                if(sleep_list_head == NULL) {
+                if (sleep_list_head == NULL) {
                     sleep_list_tail = NULL;
                 }
                 kfree(current);
                 current = sleep_list_head;
             } else {
                 prev->next = current->next;
-                if(current == sleep_list_tail) {
+                if (current == sleep_list_tail) {
                     sleep_list_tail = prev;
                 }
                 kfree(current);
                 current = prev->next;
             }
         } else {
-            prev = current;
+            prev    = current;
             current = current->next;
         }
     }
@@ -80,7 +82,7 @@ void pit_handler_c(void)
 
 void sleep(uint32_t milliseconds)
 {
-    if(milliseconds == 0 || current_task_TCB == NULL) {
+    if (milliseconds == 0 || current_task_TCB == NULL) {
         return;
     }
 
@@ -89,7 +91,7 @@ void sleep(uint32_t milliseconds)
     uint32_t wake_time = time_elapsed_boot + milliseconds;
 
     sleep_info *new_sleep = (sleep_info *)kmalloc(sizeof(sleep_info));
-    new_sleep->wake_time   = wake_time;
+    new_sleep->wake_time  = wake_time;
     new_sleep->task       = current_task_TCB;
     new_sleep->next       = NULL;
 
@@ -100,4 +102,5 @@ void sleep(uint32_t milliseconds)
         sleep_list_tail->next = new_sleep;
         sleep_list_tail       = new_sleep;
     }
+    schedule();
 }
