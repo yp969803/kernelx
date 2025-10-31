@@ -16,7 +16,7 @@ static inline bool atomic_compare_exchange(uint32_t *ptr, uint32_t *expected, ui
     return success;
 }
 
-mutex *mutex_init(void)
+mutex *new_mutex(void)
 {
     mutex *m           = kmalloc(sizeof(mutex));
     m->count           = 1;
@@ -24,6 +24,14 @@ mutex *mutex_init(void)
     m->wait_queue_head = NULL;
     m->wait_queue_tail = NULL;
     return m;
+}
+
+void mutex_init(mutex *m)
+{
+    m->count           = 1;
+    m->owner           = NULL;
+    m->wait_queue_head = NULL;
+    m->wait_queue_tail = NULL;
 }
 
 void mutex_lock(mutex *m)
