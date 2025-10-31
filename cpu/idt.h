@@ -7,11 +7,11 @@
 #define KERNEL_DS 0x10
 
 struct IDTEntry {
-    uint16_t offset_low;   // Lower 16 bits of the ISR's address
-    uint16_t selector;     // Segment selector
-    uint8_t zero;          // Reserved, set to 0
-    uint8_t type_attr;     // Type and attributes
-    uint16_t offset_high;  // Upper 16 bits of the ISR's address
+    uint16_t offset_low;  // Lower 16 bits of the ISR's address
+    uint16_t selector;    // Segment selector
+    uint8_t zero;         // Reserved, set to 0
+    uint8_t type_attr;    // Type and attributes
+    uint16_t offset_high; // Upper 16 bits of the ISR's address
 } __attribute__((packed));
 
 struct IDTPtr {

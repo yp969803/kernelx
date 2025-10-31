@@ -17,7 +17,7 @@ kernelx is a simple lightweight 32bit x86 linux kernel, designed to run in small
 Core Build Tools
 
 ```
-sudo apt install build-essential gdb-multiarch make nasm
+sudo apt install build-essential gdb-multiarch make nasm clang-format
 ```
 
 GRUB Tools

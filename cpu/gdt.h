@@ -2,21 +2,21 @@
 
 #include <stdint.h>
 
-struct gdt_entry_struct{
-    uint16_t limit_low;           
-    uint16_t base_low;            
-    uint8_t  base_middle;         
-    uint8_t  access;              
-    uint8_t  flags;         
-    uint8_t  base_high;           
+struct gdt_entry_struct {
+    uint16_t limit_low;
+    uint16_t base_low;
+    uint8_t base_middle;
+    uint8_t access;
+    uint8_t flags;
+    uint8_t base_high;
 } __attribute__((packed));
 
-struct gdt_ptr_struct{
-    uint16_t limit;               
-    uint32_t base;                
+struct gdt_ptr_struct {
+    uint16_t limit;
+    uint32_t base;
 } __attribute__((packed));
 
-struct tss_entry_struct{
+struct tss_entry_struct {
     uint32_t prev_tss;
     uint32_t esp0;
     uint32_t ss0;
@@ -37,7 +37,7 @@ struct tss_entry_struct{
     uint32_t es;
     uint32_t cs;
     uint32_t ss;
-    uint32_t ds; 
+    uint32_t ds;
     uint32_t fs;
     uint32_t gs;
     uint32_t ldt;

@@ -1,7 +1,7 @@
 #pragma once
 
+#include "../drivers/vga.h"
 #include <stdarg.h>
 #include <stdint.h>
-#include "../drivers/vga.h"
 
 void kprintf(const char *format, ...);

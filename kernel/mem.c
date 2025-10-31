@@ -2,7 +2,7 @@
 #include "../drivers/vga.h"
 #include "utils.h"
 
-static uint32_t pageFrameMin;   
+static uint32_t pageFrameMin;
 static uint32_t pageFrameMax;
 static uint32_t totalAlloc;
 int mem_num_vpages;
@@ -10,16 +10,15 @@ int mem_num_vpages;
 #define NUM_PAGES_DIRS 256
 #define NUM_PAGE_FRAMES (0x100000000 / PAGE_SIZE / 8)
 
-uint8_t physicalMemoryBitmap[NUM_PAGE_FRAMES / 8]; //Dynamically, bit array
+uint8_t physicalMemoryBitmap[NUM_PAGE_FRAMES / 8]; // Dynamically, bit array
 
 static uint32_t pageDirs[NUM_PAGES_DIRS][1024] __attribute__((aligned(4096)));
 static uint8_t pageDirUsed[NUM_PAGES_DIRS];
 
-
-void* memmove(void* dest, const void* src, size_t n) 
+void *memmove(void *dest, const void *src, size_t n)
 {
-    uint8_t* d = (uint8_t*)dest;
-    const uint8_t* s = (const uint8_t*)src;
+    uint8_t *d       = (uint8_t *)dest;
+    const uint8_t *s = (const uint8_t *)src;
 
     if (d < s) {
         for (size_t i = 0; i < n; i++)
@@ -32,11 +31,10 @@ void* memmove(void* dest, const void* src, size_t n)
     return dest;
 }
 
-
-void memory_copy(void *src, void *dest, size_t nbytes) 
+void memory_copy(void *src, void *dest, size_t nbytes)
 {
-    uint8_t* d = (uint8_t*)dest;
-    const uint8_t* s = (const uint8_t*)src;
+    uint8_t *d       = (uint8_t *)dest;
+    const uint8_t *s = (const uint8_t *)src;
     int i;
     for (i = 0; i < nbytes; i++) {
         *(d + i) = *(s + i);
@@ -46,122 +44,123 @@ void memory_copy(void *src, void *dest, size_t nbytes)
 void mem_set(void *dst, uint8_t val, size_t count)
 {
     uint8_t *temp = (uint8_t *)dst;
-    for( ; count != 0; count--) *temp++ = val;
+    for (; count != 0; count--)
+        *temp++ = val;
 }
-
 
 void pmm_init(uint32_t memLow, uint32_t memHigh)
 {
-    pageFrameMin  = CEIL_DIV(memLow, PAGE_SIZE);
-    pageFrameMax  = memHigh / PAGE_SIZE;
-    totalAlloc = 0;
+    pageFrameMin = CEIL_DIV(memLow, PAGE_SIZE);
+    pageFrameMax = memHigh / PAGE_SIZE;
+    totalAlloc   = 0;
     mem_set(pageDirs, 0, sizeof(pageDirs));
     mem_set(pageDirUsed, 0, sizeof(pageDirUsed));
 }
 
 void invalidate(uint32_t vaddr)
 {
-    asm volatile("invlpg %0"::"m"(vaddr));
+    asm volatile("invlpg %0" ::"m"(vaddr));
 }
 
-void init_memory(uint32_t memHigh, uint32_t physicalAllocStart) 
+void init_memory(uint32_t memHigh, uint32_t physicalAllocStart)
 {
-   mem_num_vpages = 0;
-   initial_page_dir[0] = 0;
-   invalidate(0);
-   initial_page_dir[1023]=((uint32_t)initial_page_dir-KERNEL_START) | PAGE_FLAG_PRESENT | PAGE_FLAG_WRITE;
-   invalidate(0xFFFFF000);
-   pmm_init(physicalAllocStart, memHigh);
+    mem_num_vpages      = 0;
+    initial_page_dir[0] = 0;
+    invalidate(0);
+    initial_page_dir[1023] =
+        ((uint32_t)initial_page_dir - KERNEL_START) | PAGE_FLAG_PRESENT | PAGE_FLAG_WRITE;
+    invalidate(0xFFFFF000);
+    pmm_init(physicalAllocStart, memHigh);
 }
 
 uint32_t pmmAllocPageFrame(void)
 {
-    uint32_t start = pageFrameMin/ 8 + ((pageFrameMin & 7)!= 0 ? 1 : 0);
-    uint32_t end = pageFrameMax / 8 - ((pageFrameMax & 7) != 0 ? 1 : 0);
-    for(uint32_t b = start ; b< end; b++){
+    uint32_t start = pageFrameMin / 8 + ((pageFrameMin & 7) != 0 ? 1 : 0);
+    uint32_t end   = pageFrameMax / 8 - ((pageFrameMax & 7) != 0 ? 1 : 0);
+    for (uint32_t b = start; b < end; b++) {
         uint8_t byte = physicalMemoryBitmap[b];
-        if(byte == 0xFF){
+        if (byte == 0xFF) {
             continue;
         }
 
-        for(uint32_t i =0; i<8; i++){
+        for (uint32_t i = 0; i < 8; i++) {
             bool used = byte >> i & 1;
-            if(!used) {
-                byte  ^= (-1 ^byte) & (1 << i);
+            if (!used) {
+                byte ^= (-1 ^ byte) & (1 << i);
                 physicalMemoryBitmap[b] = byte;
                 totalAlloc++;
-                uint32_t addr = (b*8+i)*0x1000;
+                uint32_t addr = (b * 8 + i) * 0x1000;
                 return addr;
             }
         }
-
     }
-    return 0; 
+    return 0;
 }
 
 void pmmFreePageFrame(uint32_t paddr)
 {
-  
-    uint32_t frameIndex = paddr / PAGE_SIZE;      
-    uint32_t byteIndex  = frameIndex / 8;     
-    uint32_t bitIndex   = frameIndex % 8;    
+
+    uint32_t frameIndex = paddr / PAGE_SIZE;
+    uint32_t byteIndex  = frameIndex / 8;
+    uint32_t bitIndex   = frameIndex % 8;
 
     physicalMemoryBitmap[byteIndex] &= ~(1 << bitIndex);
 
-    if(totalAlloc > 0){
+    if (totalAlloc > 0) {
         totalAlloc--;
     }
 }
 
-uint32_t* memGetCurrentPageDir() 
+uint32_t *memGetCurrentPageDir()
 {
     uint32_t pd;
-    asm volatile("mov %%cr3, %0":"=r"(pd));
+    asm volatile("mov %%cr3, %0" : "=r"(pd));
     pd += KERNEL_START;
-    return (uint32_t*)pd;
+    return (uint32_t *)pd;
 }
 
-void memChangePageDir(uint32_t* pd)
+void memChangePageDir(uint32_t *pd)
 {
-    pd = (uint32_t*) (((uint32_t)pd)-KERNEL_START);
-    asm volatile("mov %0, %%eax \n mov %%eax, %%cr3 \n" :: "m"(pd));
+    pd = (uint32_t *)(((uint32_t)pd) - KERNEL_START);
+    asm volatile("mov %0, %%eax \n mov %%eax, %%cr3 \n" ::"m"(pd));
 }
 
-void syncPageDirs(){
-    for (int i = 0; i < NUM_PAGES_DIRS; i++){
-        if (pageDirUsed[i]){
-            uint32_t* pageDir = pageDirs[i];
+void syncPageDirs()
+{
+    for (int i = 0; i < NUM_PAGES_DIRS; i++) {
+        if (pageDirUsed[i]) {
+            uint32_t *pageDir = pageDirs[i];
 
-            for (int i = 768; i < 1023; i++){
+            for (int i = 768; i < 1023; i++) {
                 pageDir[i] = initial_page_dir[i] & ~PAGE_FLAG_OWNER;
             }
         }
     }
 }
 
-void memMapPage(uint32_t virtualAddr, uint32_t physAddr, uint32_t flags) 
+void memMapPage(uint32_t virtualAddr, uint32_t physAddr, uint32_t flags)
 {
     uint32_t *prevPageDir = 0;
 
-    if(virtualAddr >= KERNEL_START) {
-      prevPageDir = memGetCurrentPageDir();
-      if(prevPageDir != initial_page_dir) {
-          memChangePageDir(initial_page_dir);
-      }
-      flags |= PAGE_FLAG_GLOBAL;
+    if (virtualAddr >= KERNEL_START) {
+        prevPageDir = memGetCurrentPageDir();
+        if (prevPageDir != initial_page_dir) {
+            memChangePageDir(initial_page_dir);
+        }
+        flags |= PAGE_FLAG_GLOBAL;
     }
 
     uint32_t pdIndex = (virtualAddr >> 22);
-    uint32_t ptIndex = (virtualAddr >> 12) & 0x3FF; 
+    uint32_t ptIndex = (virtualAddr >> 12) & 0x3FF;
 
-    uint32_t* pageDir = REC_PAGEDIR;
-    uint32_t* pt = REC_PAGETABLE(pdIndex);
-    if (!(pageDir[pdIndex] & PAGE_FLAG_PRESENT)){
+    uint32_t *pageDir = REC_PAGEDIR;
+    uint32_t *pt      = REC_PAGETABLE(pdIndex);
+    if (!(pageDir[pdIndex] & PAGE_FLAG_PRESENT)) {
         uint32_t ptPAddr = pmmAllocPageFrame();
         pageDir[pdIndex] = ptPAddr | PAGE_FLAG_PRESENT | PAGE_FLAG_WRITE | PAGE_FLAG_OWNER | flags;
         invalidate(virtualAddr);
 
-        for (uint32_t i = 0; i < 1024; i++){
+        for (uint32_t i = 0; i < 1024; i++) {
             pt[i] = 0;
         }
     }
@@ -170,37 +169,37 @@ void memMapPage(uint32_t virtualAddr, uint32_t physAddr, uint32_t flags)
     mem_num_vpages++;
     invalidate(virtualAddr);
 
-    if (prevPageDir != 0){
+    if (prevPageDir != 0) {
         syncPageDirs();
 
-        if (prevPageDir != initial_page_dir){
+        if (prevPageDir != initial_page_dir) {
             memChangePageDir(prevPageDir);
         }
     }
 }
 
-void memUnMapPage(uint32_t virtualAddr) 
+void memUnMapPage(uint32_t virtualAddr)
 {
     uint32_t *prevPageDir = 0;
 
-    if(virtualAddr >= KERNEL_START) {
-      prevPageDir = memGetCurrentPageDir();
-      if(prevPageDir != initial_page_dir) {
-          memChangePageDir(initial_page_dir);
-      }
+    if (virtualAddr >= KERNEL_START) {
+        prevPageDir = memGetCurrentPageDir();
+        if (prevPageDir != initial_page_dir) {
+            memChangePageDir(initial_page_dir);
+        }
     }
 
     uint32_t pdIndex = (virtualAddr >> 22);
-    uint32_t ptIndex = (virtualAddr >> 12) & 0x3FF; 
+    uint32_t ptIndex = (virtualAddr >> 12) & 0x3FF;
 
-    uint32_t* pageDir = REC_PAGEDIR;
-    
-    if (!(pageDir[pdIndex] & PAGE_FLAG_PRESENT)){
+    uint32_t *pageDir = REC_PAGEDIR;
+
+    if (!(pageDir[pdIndex] & PAGE_FLAG_PRESENT)) {
         return;
     }
 
-    uint32_t* pt = REC_PAGETABLE(pdIndex);
-    if (!(pt[ptIndex] & PAGE_FLAG_PRESENT)){
+    uint32_t *pt = REC_PAGETABLE(pdIndex);
+    if (!(pt[ptIndex] & PAGE_FLAG_PRESENT)) {
         return;
     }
 
@@ -208,34 +207,34 @@ void memUnMapPage(uint32_t virtualAddr)
     pmmFreePageFrame(physAddr);
 
     pt[ptIndex] = 0;
-    
+
     mem_num_vpages--;
     invalidate(virtualAddr);
 
-    if (prevPageDir != 0){
+    if (prevPageDir != 0) {
         syncPageDirs();
 
-        if (prevPageDir != initial_page_dir){
+        if (prevPageDir != initial_page_dir) {
             memChangePageDir(prevPageDir);
         }
     }
 }
 
 // getPhyFmAddress returns the physical frame address mapped to the given virtual address.
-uint32_t* getPhyFmAddress(uint32_t virtualAddr)
+uint32_t *getPhyFmAddress(uint32_t virtualAddr)
 {
     uint32_t pdIndex = (virtualAddr >> 22);
-    uint32_t ptIndex = (virtualAddr >> 12) & 0x3FF; 
+    uint32_t ptIndex = (virtualAddr >> 12) & 0x3FF;
 
-    uint32_t* pageDir = REC_PAGEDIR;
-    if (!(pageDir[pdIndex] & PAGE_FLAG_PRESENT)){
-        return 0; 
+    uint32_t *pageDir = REC_PAGEDIR;
+    if (!(pageDir[pdIndex] & PAGE_FLAG_PRESENT)) {
+        return 0;
     }
 
-    uint32_t* pt = REC_PAGETABLE(pdIndex);
-    if (!(pt[ptIndex] & PAGE_FLAG_PRESENT)){
-        return 0; 
+    uint32_t *pt = REC_PAGETABLE(pdIndex);
+    if (!(pt[ptIndex] & PAGE_FLAG_PRESENT)) {
+        return 0;
     }
 
-    return (uint32_t*)(pt[ptIndex] & ~0xFFF); 
+    return (uint32_t *)(pt[ptIndex] & ~0xFFF);
 }

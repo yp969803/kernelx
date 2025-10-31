@@ -55,3 +55,7 @@ clean:
 	$(RM) stdlib/*.o
 	$(RM) iso/boot/*.elf
 	$(RM) kernelx.iso
+
+format:
+	find . -regex '.*\.\(c\|h\)$$' -exec clang-format -i {} \;
+

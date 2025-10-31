@@ -1,24 +1,27 @@
 #pragma once
 
-#define CEIL_DIV(a, b) (((a) + (b) - 1) / (b))
+#define CEIL_DIV(a, b) (((a) + (b)-1) / (b))
 
-static inline void halt(void) {
+static inline void halt(void)
+{
     __asm__ __volatile__("hlt");
 }
 
-static inline void clear_interrupt(void){
+static inline void clear_interrupt(void)
+{
     __asm__ __volatile__("cli");
 }
 
+static inline void panic(void)
+{
 
-static inline void panic(void) {
-    
-    clear_interrupt();  
+    clear_interrupt();
     while (1) {
-        asm volatile("hlt");  // halt the CPU indefinitely
+        asm volatile("hlt"); // halt the CPU indefinitely
     }
 }
 
-static inline void set_interrupt(void){
+static inline void set_interrupt(void)
+{
     __asm__ __volatile__("sti");
 }
