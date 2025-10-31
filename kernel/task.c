@@ -168,7 +168,7 @@ void quantum_expired_handler(void)
     }
     current_task_TCB->time_used++;
     current_task_TCB->time_quantum--;
-    if (current_task_TCB->time_quantum <= 0) {
+    if (current_task_TCB->time_quantum <= 0 || current_task_TCB->state != TASK_RUNNING) {
         set_next_task();
     } else {
         next_task_TCB = current_task_TCB;
