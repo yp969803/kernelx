@@ -1,10 +1,13 @@
 #include "kmalloc.h"
 #include "mem.h"
 #include "utils.h"
+#include "mutex.h"
 
 static uint32_t heapStart;
 static uint32_t heapSize;
 static bool kmallocInitialized = false;
+
+static spinlock heap_lock;
 
 void increaseHeapSize(int newSize)
 {
@@ -42,6 +45,8 @@ void kmallocInit(uint32_t initialHeapSize)
     header->free          = true;
     header->next          = NULL;
     header->prev          = NULL;
+
+    spinlock_init(&heap_lock);    
 }
 
 void *kmalloc(uint32_t size)
@@ -49,6 +54,8 @@ void *kmalloc(uint32_t size)
     if (size == 0 || !kmallocInitialized) {
         return NULL;
     }
+
+    spinlock_lock(&heap_lock);
 
     size = ALIGN(size);
 
@@ -71,6 +78,7 @@ void *kmalloc(uint32_t size)
                 current->size = size;
             }
             current->free = false;
+            spinlock_unlock(&heap_lock);
             return (void *)((uint32_t)current + sizeof(KmallocHeader));
         }
         current = current->next;
@@ -120,9 +128,11 @@ void *kmalloc(uint32_t size)
                 current->size = size;
             }
             current->free = false;
+            spinlock_unlock(&heap_lock);
             return (void *)((uint32_t)current + sizeof(KmallocHeader));
         }
     }
+    spinlock_unlock(&heap_lock);
     return NULL;
 }
 
@@ -131,6 +141,8 @@ void kfree(void *ptr)
     if (ptr == NULL || !kmallocInitialized) {
         return;
     }
+
+    spinlock_lock(&heap_lock);
 
     KmallocHeader *header = (KmallocHeader *)((uint32_t)ptr - sizeof(KmallocHeader));
     header->free          = true;
@@ -152,6 +164,7 @@ void kfree(void *ptr)
             header->next->prev = header->prev;
         }
     }
+    spinlock_unlock(&heap_lock);
 }
 
 void *krealloc(void *ptr, uint32_t size)
