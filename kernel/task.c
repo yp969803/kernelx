@@ -145,11 +145,11 @@ void set_next_task()
 
 void schedule(void)
 {
-    spinlock_lock(&task_lock);
     if (!current_task_TCB || !current_task_TCB->next) {
-        spinlock_unlock(&task_lock);
         return;
     }
+
+    spinlock_lock(&task_lock);
 
     set_next_task();
 
