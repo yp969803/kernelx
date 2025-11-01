@@ -3,6 +3,8 @@
 #include <stddef.h>
 #include <stdint.h>
 
+spinlock kmalloc_spinlock;
+
 static inline bool atomic_compare_exchange(uint32_t *ptr, uint32_t *expected, uint32_t desired)
 {
     unsigned char success;
@@ -80,21 +82,21 @@ void mutex_unlock(mutex *m)
     }
 }
 
-spin_lock *new_spin_lock(void)
+spinlock *new_spinlock(void)
 {
-    spin_lock *m = kmalloc(sizeof(spin_lock));
+    spinlock *m = kmalloc(sizeof(spinlock));
     m->count     = 1;
     m->owner     = NULL;
     return m;
 }
 
-void spink_lock_init(spin_lock *m)
+void spink_lock_init(spinlock *m)
 {
     m->count = 1;
     m->owner = NULL;
 }
 
-void spin_lock_lock(spin_lock *m)
+void spinlock_lock(spinlock *m)
 {
     uint32_t expected = 1;
     while (!atomic_compare_exchange(&m->count, &expected, 0))
@@ -102,7 +104,7 @@ void spin_lock_lock(spin_lock *m)
     m->owner = current_task_TCB;
 }
 
-void spin_lock_unlock(spin_lock *m)
+void spinlock_unlock(spinlock *m)
 {
     if (m->owner != current_task_TCB) {
         return;
