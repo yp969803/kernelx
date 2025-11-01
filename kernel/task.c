@@ -2,9 +2,12 @@
 #include "../cpu/idt.h"
 #include "kmalloc.h"
 #include "mem.h"
+#include "mutex.h"
 #include <stddef.h>
 
 extern void switch_to_task();
+
+static spinlock task_lock;
 
 thread_control_block *current_task_TCB = NULL;
 thread_control_block *task_list_head   = NULL;
@@ -54,6 +57,7 @@ void initialize_multitasking(void)
     current_task_TCB->time_quantum = TIME_QUANTUM_MS;
 
     next_task_TCB = current_task_TCB;
+    spinlock_init(&task_lock);
 }
 
 thread_control_block *create_task(void *(*entry_point)(void *), void *args, uint32_t *page_dir)
@@ -90,11 +94,13 @@ thread_control_block *create_task(void *(*entry_point)(void *), void *args, uint
     tcb->esp0         = stack_top;
     tcb->cr3          = page_dir;
     tcb->state        = TASK_READY;
-    tcb->id           = next_id++;
-    tcb->pid          = current_task_TCB->pid;
     tcb->stack_base   = stack;
     tcb->time_used    = 0;
     tcb->time_quantum = TIME_QUANTUM_MS;
+
+    spinlock_lock(&task_lock);
+    tcb->id  = next_id++;
+    tcb->pid = current_task_TCB->pid;
 
     if (!task_list_head) {
         task_list_head = tcb;
@@ -106,6 +112,7 @@ thread_control_block *create_task(void *(*entry_point)(void *), void *args, uint
         tmp->next = tcb;
         tcb->next = task_list_head;
     }
+    spinlock_unlock(&task_lock);
 
     return tcb;
 }
@@ -138,16 +145,20 @@ void set_next_task()
 
 void schedule(void)
 {
+    spinlock_lock(&task_lock);
     if (!current_task_TCB || !current_task_TCB->next) {
+        spinlock_unlock(&task_lock);
         return;
     }
 
     set_next_task();
 
     if (current_task_TCB == next_task_TCB) {
+        spinlock_unlock(&task_lock);
         return;
     }
 
+    spinlock_unlock(&task_lock);
     push_interrupt_frame();
     switch_to_task();
 }
@@ -157,7 +168,9 @@ void exit(void)
     if (!current_task_TCB) {
         return;
     }
+    spinlock_lock(&task_lock);
     current_task_TCB->state = TASK_ZOOMBIE;
+    spinlock_unlock(&task_lock);
     schedule();
 }
 
@@ -166,6 +179,7 @@ void quantum_expired_handler(void)
     if (!current_task_TCB) {
         return;
     }
+    spinlock_lock(&task_lock);
     current_task_TCB->time_used++;
     current_task_TCB->time_quantum--;
     if (current_task_TCB->time_quantum <= 0 || current_task_TCB->state != TASK_RUNNING) {
@@ -173,4 +187,5 @@ void quantum_expired_handler(void)
     } else {
         next_task_TCB = current_task_TCB;
     }
+    spinlock_unlock(&task_lock);
 }

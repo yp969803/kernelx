@@ -83,8 +83,8 @@ void mutex_unlock(mutex *m)
 spinlock *new_spinlock(void)
 {
     spinlock *m = kmalloc(sizeof(spinlock));
-    m->count     = 1;
-    m->owner     = NULL;
+    m->count    = 1;
+    m->owner    = NULL;
     return m;
 }
 

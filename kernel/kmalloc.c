@@ -1,7 +1,7 @@
 #include "kmalloc.h"
 #include "mem.h"
-#include "utils.h"
 #include "mutex.h"
+#include "utils.h"
 
 static uint32_t heapStart;
 static uint32_t heapSize;
@@ -46,7 +46,7 @@ void kmallocInit(uint32_t initialHeapSize)
     header->next          = NULL;
     header->prev          = NULL;
 
-    spinlock_init(&heap_lock);    
+    spinlock_init(&heap_lock);
 }
 
 void *kmalloc(uint32_t size)
