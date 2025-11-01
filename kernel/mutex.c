@@ -19,7 +19,7 @@ static inline bool atomic_compare_exchange(uint32_t *ptr, uint32_t *expected, ui
 
 mutex *new_mutex(void)
 {
-    mutex *m           = (mutex *)kmalloc(sizeof(mutex));
+    mutex *m           = kmalloc(sizeof(mutex));
     m->count           = 1;
     m->owner           = NULL;
     m->wait_queue_head = NULL;
@@ -41,7 +41,7 @@ void mutex_lock(mutex *m)
     while (!atomic_compare_exchange(&m->count, &expected, 0)) {
         expected = 1;
 
-        mutex_wait_node *node = (mutex_wait_node *)kmalloc(sizeof(mutex_wait_node));
+        mutex_wait_node *node = kmalloc(sizeof(mutex_wait_node));
         node->task            = current_task_TCB;
         node->next            = NULL;
 
@@ -83,7 +83,7 @@ void mutex_unlock(mutex *m)
 
 spinlock *new_spinlock(void)
 {
-    spinlock *m = (spinlock *)kmalloc(sizeof(spinlock));
+    spinlock *m = kmalloc(sizeof(spinlock));
     m->count    = 1;
     m->owner    = NULL;
     return m;
@@ -98,8 +98,7 @@ void spinlock_init(spinlock *m)
 void spinlock_lock(spinlock *m)
 {
     uint32_t expected = 1;
-    while (!atomic_compare_exchange(&m->count, &expected, 0))
-        ;
+    while (!atomic_compare_exchange(&m->count, &expected, 0));
     m->owner = current_task_TCB;
 }
 
