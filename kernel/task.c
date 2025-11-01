@@ -179,7 +179,6 @@ void quantum_expired_handler(void)
     if (!current_task_TCB) {
         return;
     }
-    spinlock_lock(&task_lock);
     current_task_TCB->time_used++;
     current_task_TCB->time_quantum--;
     if (current_task_TCB->time_quantum <= 0 || current_task_TCB->state != TASK_RUNNING) {
@@ -187,5 +186,4 @@ void quantum_expired_handler(void)
     } else {
         next_task_TCB = current_task_TCB;
     }
-    spinlock_unlock(&task_lock);
 }
