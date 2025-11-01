@@ -3,8 +3,6 @@
 #include <stddef.h>
 #include <stdint.h>
 
-spinlock kmalloc_spinlock;
-
 static inline bool atomic_compare_exchange(uint32_t *ptr, uint32_t *expected, uint32_t desired)
 {
     unsigned char success;
