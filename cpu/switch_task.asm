@@ -40,10 +40,10 @@ switch_to_task:
     mov cr3,eax                  
 .doneVAS:
 
-    pop ds
-    pop es
-    pop fs
     pop gs
+    pop fs
+    pop es
+    pop ds
     popad
     
     sti

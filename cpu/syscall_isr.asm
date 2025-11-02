@@ -20,10 +20,10 @@ isr_syscall:
 
     call syscall_handler_c 
 
-    pop ds
-    pop es
-    pop fs
     pop gs
+    pop fs
+    pop es
+    pop ds
     popad
 
     iretd

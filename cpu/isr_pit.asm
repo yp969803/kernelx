@@ -57,10 +57,10 @@ isr_pit:
     mov cr3,eax                  
 .doneVAS:
 
-    pop ds
-    pop es
-    pop fs
     pop gs
+    pop fs
+    pop es
+    pop ds
     popad
     ; Send End Of Interrupt (EOI) to PIC
     mov al, 0x20
