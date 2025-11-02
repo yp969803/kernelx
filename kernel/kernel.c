@@ -16,8 +16,8 @@ void *task1(void *args)
 {
 
     kprintf("Task 1 is running\n");
-    sleep(4000);
-    kprintf("Task 1 woke up after sleeping for 2000 ms\n");
+    sleep(1000);
+    kprintf("Task 1 woke up after sleeping for 1s\n");
     exit();
     return NULL;
 }

@@ -219,11 +219,14 @@ void schedule(void)
         return;
     }
 
-    if (current_task_TCB->type == TASK_KERNEL) {
+    if (current_task_TCB->type == TASK_USER) {
+        spinlock_unlock(&task_lock);
+        switch_to_task();
+    }else{
+        spinlock_unlock(&task_lock);
         push_interrupt_frame();
+        switch_to_task();
     }
-    spinlock_unlock(&task_lock);
-    switch_to_task();
 }
 
 void exit(void)
