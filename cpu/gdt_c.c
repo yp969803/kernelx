@@ -25,7 +25,7 @@ void initGdt(void)
     // User Mode Code Segment CS=0x001B
     setGdtEntry(3, 0, 0xFFFFFFFF, 0xFA, 0xCF);
 
-    // User Mode Data Segment DS=0x0020
+    // User Mode Data Segment DS=0x0023
     setGdtEntry(4, 0, 0xFFFFFFFF, 0xF2, 0xCF);
 
     writeTSS(5, 0x10, 0x0); // TSS Segment TSS=0x0028

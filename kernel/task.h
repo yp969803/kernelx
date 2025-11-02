@@ -8,6 +8,7 @@
 #define TIME_QUANTUM_MS 5
 
 typedef enum { TASK_READY = 0, TASK_RUNNING, TASK_BLOCKED, TASK_ZOOMBIE } task_state_t;
+typedef enum { TASK_KERNEL = 0, TASK_USER } task_type_t;
 
 typedef struct thread_control_block {
     uint32_t *esp;
@@ -17,15 +18,17 @@ typedef struct thread_control_block {
     task_state_t state;
     uint32_t id;
     uint32_t pid;
-    uint32_t *stack_base;
+    uint32_t *kernel_stack_base;
+    uint32_t *user_stack_base;
     uint32_t time_used; // in ms
     int time_quantum;   // in ms
+    task_type_t type;
 } thread_control_block;
 
 extern thread_control_block *current_task_TCB;
 
 void initialize_multitasking(void);
-thread_control_block *create_task(void *(*entry_point)(void *), void *args, uint32_t *page_dir);
+thread_control_block *create_kernel_task(void *(*entry_point)(void *), void *args);
 void schedule(void);
 void exit(void);
 void quantum_expired_handler(void);

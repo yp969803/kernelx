@@ -98,7 +98,8 @@ void spinlock_init(spinlock *m)
 void spinlock_lock(spinlock *m)
 {
     uint32_t expected = 1;
-    while (!atomic_compare_exchange(&m->count, &expected, 0));
+    while (!atomic_compare_exchange(&m->count, &expected, 0))
+        ;
     m->owner = current_task_TCB;
 }
 

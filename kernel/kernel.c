@@ -47,7 +47,7 @@ void main(uint32_t magic, struct multiboot_info *mb_addr)
     kmallocInit(0x1000);
     initialize_multitasking();
     initialize_timer();
-    create_task(task1, NULL, INIT_PAGE_DIR_PHY);
+    create_kernel_task(task1, NULL);
 
     while (1) {
         halt();

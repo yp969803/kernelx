@@ -5,6 +5,8 @@
 #define IDT_SIZE 256
 #define KERNEL_CS 0x08
 #define KERNEL_DS 0x10
+#define USER_CS 0x1B
+#define USER_DS 0x23
 
 struct IDTEntry {
     uint16_t offset_low;  // Lower 16 bits of the ISR's address
