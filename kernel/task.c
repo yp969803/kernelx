@@ -219,8 +219,10 @@ void schedule(void)
         return;
     }
 
+    if (current_task_TCB->type == TASK_KERNEL) {
+        push_interrupt_frame();
+    }
     spinlock_unlock(&task_lock);
-    push_interrupt_frame();
     switch_to_task();
 }
 
