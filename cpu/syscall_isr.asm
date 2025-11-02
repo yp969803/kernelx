@@ -18,7 +18,10 @@ isr_syscall:
     mov fs, ax
     mov gs, ax
 
+    push esp
     call syscall_handler_c 
+
+    add esp, 4            
 
     pop gs
     pop fs
