@@ -2,6 +2,8 @@
 
 #include <stdint.h>
 
+typedef int (*syscall_t)(uint32_t, uint32_t, uint32_t, uint32_t, uint32_t, uint32_t);
+
 typedef struct pt_regs {
     uint32_t gs, fs, es, ds;              
     uint32_t edi, esi, ebp, esp;
