@@ -1,0 +1,29 @@
+[bits 32]
+
+global syscall_isr
+extern syscall_handler_c   
+
+section .text
+
+syscall_isr:
+    pushad
+    push ds
+    push es
+    push fs
+    push gs
+
+    mov ax, 0x10            ; kernel data segment selector 
+    mov ds, ax
+    mov es, ax
+    mov fs, ax
+    mov gs, ax
+
+    call syscall_handler_c 
+
+    pop ds
+    pop es
+    pop fs
+    pop gs
+    popad
+
+    iretd
