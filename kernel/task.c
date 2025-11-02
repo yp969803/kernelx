@@ -55,7 +55,7 @@ void initialize_multitasking(void)
     current_task_TCB->kernel_stack_base = NULL;
     current_task_TCB->time_used         = 0;
     current_task_TCB->time_quantum      = TIME_QUANTUM_MS;
-
+    current_task_TCB->type              = TASK_KERNEL;
     next_task_TCB = current_task_TCB;
     spinlock_init(&task_lock);
 }
