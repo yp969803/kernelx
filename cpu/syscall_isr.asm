@@ -1,11 +1,11 @@
 [bits 32]
 
-global syscall_isr
+global isr_syscall
 extern syscall_handler_c   
 
 section .text
 
-syscall_isr:
+isr_syscall:
     pushad
     push ds
     push es
