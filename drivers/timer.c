@@ -1,6 +1,7 @@
 #include "timer.h"
 #include "../cpu/io.h"
 #include "../kernel/kmalloc.h"
+#include "../kernel/mutex.h"
 #include "../kernel/task.h"
 #include "../stdlib/stdio.h"
 #include <stddef.h>
@@ -13,6 +14,8 @@ static uint32_t time_elapsed_boot = 0;
 
 static sleep_info *sleep_list_head = NULL;
 static sleep_info *sleep_list_tail = NULL;
+
+static spinlock timer_lock;
 
 void pit_set_timer(uint32_t freq)
 {
@@ -36,13 +39,16 @@ void pit_set_delay(uint32_t freq)
 
 void initialize_timer(void)
 {
+    spinlock_init(&timer_lock);
     pit_set_timer(1000);
     time_elapsed_boot = 0;
 }
 
 void sleep_wake(void)
 {
+    spinlock_lock(&timer_lock);
     if (sleep_list_head == NULL) {
+        spinlock_unlock(&timer_lock);
         return;
     }
     sleep_info *current = sleep_list_head;
@@ -71,6 +77,7 @@ void sleep_wake(void)
             current = current->next;
         }
     }
+    spinlock_unlock(&timer_lock);
 }
 
 void pit_handler_c(void)
@@ -86,14 +93,15 @@ void sleep(uint32_t milliseconds)
         return;
     }
 
+    sleep_info *new_sleep = (sleep_info *)kmalloc(sizeof(sleep_info));
+
+    spinlock_lock(&timer_lock);
     current_task_TCB->state = TASK_BLOCKED;
 
-    uint32_t wake_time = time_elapsed_boot + milliseconds;
-
-    sleep_info *new_sleep = (sleep_info *)kmalloc(sizeof(sleep_info));
-    new_sleep->wake_time  = wake_time;
-    new_sleep->task       = current_task_TCB;
-    new_sleep->next       = NULL;
+    uint32_t wake_time   = time_elapsed_boot + milliseconds;
+    new_sleep->wake_time = wake_time;
+    new_sleep->task      = current_task_TCB;
+    new_sleep->next      = NULL;
 
     if (sleep_list_head == NULL) {
         sleep_list_head = new_sleep;
@@ -102,5 +110,7 @@ void sleep(uint32_t milliseconds)
         sleep_list_tail->next = new_sleep;
         sleep_list_tail       = new_sleep;
     }
+
+    spinlock_unlock(&timer_lock);
     schedule();
 }

@@ -1,5 +1,3 @@
 
 
-void syscall_handler_c(){
-    
-}
+void syscall_handler_c() {}

@@ -56,7 +56,7 @@ void initialize_multitasking(void)
     current_task_TCB->time_used         = 0;
     current_task_TCB->time_quantum      = TIME_QUANTUM_MS;
     current_task_TCB->type              = TASK_KERNEL;
-    next_task_TCB = current_task_TCB;
+    next_task_TCB                       = current_task_TCB;
     spinlock_init(&task_lock);
 }
 
@@ -219,11 +219,11 @@ void schedule(void)
         return;
     }
 
+    spinlock_unlock(&task_lock);
+
     if (current_task_TCB->type == TASK_USER) {
-        spinlock_unlock(&task_lock);
         switch_to_task();
-    }else{
-        spinlock_unlock(&task_lock);
+    } else {
         push_interrupt_frame();
         switch_to_task();
     }
@@ -234,9 +234,7 @@ void exit(void)
     if (!current_task_TCB) {
         return;
     }
-    spinlock_lock(&task_lock);
     current_task_TCB->state = TASK_ZOOMBIE;
-    spinlock_unlock(&task_lock);
     schedule();
 }
 
