@@ -1,6 +1,20 @@
 #include "syscall.h"
 #include "../stdlib/stdio.h"
 
+int sys_write(uint32_t buf, uint32_t unused1, uint32_t unused2, uint32_t unused3, uint32_t unused4,
+              uint32_t unused5)
+{
+
+    const char *buffer = (const char *)buf;
+
+    int i = 0;
+    while(buffer[i]!='\0'){
+        kprintf("%c",buffer[i]);
+    }
+
+    return 1;
+}
+
 syscall_t syscall_table[] = {
     (syscall_t)sys_write,
 };
@@ -23,16 +37,3 @@ void syscall_handler_c(pt_regs *regs) {
     regs->eax = func(arg1, arg2, arg3, arg4, arg5, arg6);
 }
 
-int sys_write(uint32_t buf, uint32_t unused1, uint32_t unused2, uint32_t unused3, uint32_t unused4,
-              uint32_t unused5)
-{
-
-    const char *buffer = (const char *)buf;
-
-    int i = 0;
-    while(buffer[i]!='/0'){
-        kprintf("%c",buffer[i]);
-    }
-
-    return 1;
-}
