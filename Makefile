@@ -59,3 +59,6 @@ clean:
 format:
 	find . -regex '.*\.\(c\|h\)$$' -exec clang-format -i {} \;
 
+
+disk_img:
+	qemu-img create -f raw disk.img 64M

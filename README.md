@@ -40,6 +40,12 @@ sudo apt install bochs bochs-x
 
 ## Run Locally
 
+Create disk image
+
+```
+make disk_img
+```
+
 Running locally using qemu
 
 ```
