@@ -14,7 +14,7 @@ LD ?= x86_64-elf-ld
 all: run
 
 run: iso
-	qemu-system-i386 -cdrom kernelx.iso -m 512M -boot d
+	qemu-system-i386 -cdrom kernelx.iso -hda disk.img -m 512M -boot d
 
 # only for debug
 kernel.elf: ${OBJ_FILES}
@@ -26,7 +26,7 @@ iso: kernel.elf
 
 
 debug: iso
-	qemu-system-i386 -cdrom kernelx.iso -m 512M -boot d -S -s -d guest_errors,int
+	qemu-system-i386 -cdrom kernelx.iso -hda disk.img -m 512M -boot d -S -s -d guest_errors,int
 
 run_gdb: iso
 	gdb-multiarch -ex "target remote localhost:1234" -ex "symbol-file kernel.elf"
