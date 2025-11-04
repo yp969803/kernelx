@@ -35,7 +35,7 @@ int ata_read_sectors(ATA_Device* dev, uint32_t lba, uint8_t sector_count, uint8_
 
     for (uint8_t i = 0; i < sector_count; i++) {
         // Wait for the drive to signal that data is ready
-        while (!(inb(ctrl_base) & 0x08));
+        while (!(inb(io_base+7) & 0x08));
 
         for (int j = 0; j < 256; j++) {
             uint16_t data = inw(io_base);
@@ -50,14 +50,22 @@ int ata_read_sectors(ATA_Device* dev, uint32_t lba, uint8_t sector_count, uint8_
 
 int ata_software_reset(ATA_Device* dev) {
     uint16_t ctrl_base = dev->ctrl_base;
-    
+    uint16_t io_base = dev->io_base;
+
     outb(ctrl_base, 0x04); // Set SRST bit
-    // delay for 5 microseconds
-    for (volatile int i = 0; i < 1000; i++);
+
+    // delay for 400ns
+    for (int i = 0; i < 4; i++) {
+        inb(ctrl_base);
+    }
+
     outb(ctrl_base, 0x00); // Clear SRST bit
 
-    // Wait until the drive is not busy
+    // Wait until the drive is not busy.
     while (inb(ctrl_base) & 0x80);
 
+    // Wait until the drive is ready.
+    while (!(inb(io_base + 7) & 0x40));
+    
     return 0;
 }
