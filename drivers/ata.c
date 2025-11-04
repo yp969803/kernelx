@@ -97,9 +97,9 @@ int ata_software_reset(ATA_Device *dev)
 
     ata_wait_busy(ctrl_base);
 
-    // Wait until the drive is ready.
-    while (!(inb(io_base + 7) & ATA_SR_DRDY))
-        ;
+    // // Wait until the drive is ready.
+    // while (!(inb(io_base + 7) & ATA_SR_DRDY))
+    //     ;
 
     return 0;
 }
@@ -111,4 +111,5 @@ void init_disk(void)
     disk.slave           = 0; // Master
     disk.size_in_sectors = 131070;
     disk.partition_start = 1;
+    ata_software_reset(&disk);
 }
