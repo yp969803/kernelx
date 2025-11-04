@@ -1,3 +1,5 @@
+#pragma once
+
 #include "../cpu/io.h"
 #include <stdint.h>
 
