@@ -109,4 +109,5 @@ void init_disk(void)
     disk.slave           = 0; // Master
     disk.size_in_sectors = 131070;
     disk.partition_start = 1;
+    ata_software_reset(&disk);
 }

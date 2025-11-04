@@ -46,12 +46,12 @@ void main(uint32_t magic, struct multiboot_info *mb_addr)
 
     init_memory(mb_addr->mem_upper * 1024, physicalAllocStart);
     kmallocInit(0x1000);
+    init_disk();
     initialize_multitasking();
     initialize_timer();
     create_kernel_task(task1, NULL);
 
     char *readDist = kmalloc(1024);
-    init_disk();
 
     if (ata_read_sectors(&disk, 0, 2, (uint8_t *)readDist) == 0) {
         kprintf("Read first 2 sectors successfully:\n");
