@@ -25,4 +25,8 @@ typedef struct {
     uint32_t partition_start; // sector number where partition starts
 } ATA_Device;
 
+extern ATA_Device disk;
+
 int ata_read_sectors(ATA_Device *dev, uint32_t lba, uint8_t sector_count, uint8_t *buffer);
+void init_disk(void);
+int ata_software_reset(ATA_Device *dev);

@@ -2,6 +2,8 @@
 #include "../cpu/io.h"
 #include "../kernel/utils.h"
 
+ATA_Device disk;
+
 static inline void io_delay400ns(uint16_t ctrl_base)
 {
     for (int i = 0; i < 4; i++) {
@@ -98,4 +100,13 @@ int ata_software_reset(ATA_Device *dev)
         ;
 
     return 0;
+}
+
+void init_disk(void)
+{
+    disk.io_base         = ATA_PRIMARY_IO;
+    disk.ctrl_base       = ATA_PRIMARY_CTRL;
+    disk.slave           = 0; // Master
+    disk.size_in_sectors = 131070;
+    disk.partition_start = 1;
 }

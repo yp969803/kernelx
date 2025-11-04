@@ -29,11 +29,6 @@ static inline void set_interrupt(void)
     __asm__ __volatile__("sti");
 }
 
-static inline void io_wait(void)
-{
-    outb(0x80, 0);
-}
-
 static inline bool are_interrupts_enabled()
 {
     unsigned long flags;
@@ -53,11 +48,4 @@ static inline unsigned long save_irqdisable(void)
 static inline void irqrestore(unsigned long flags)
 {
     asm("push %0\n\tpopf" : : "rm"(flags) : "memory", "cc");
-}
-
-static void intended_usage(void)
-{
-    unsigned long f = save_irqdisable();
-    do_whatever_without_irqs();
-    irqrestore(f);
 }
