@@ -24,3 +24,5 @@ typedef struct {
     uint32_t size_in_sectors; // total size of the partition in sectors
     uint32_t partition_start; // sector number where partition starts
 } ATA_Device;
+
+int ata_read_sectors(ATA_Device *dev, uint32_t lba, uint8_t sector_count, uint8_t *buffer);
