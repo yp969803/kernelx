@@ -6,6 +6,9 @@
 #define ATA_SECONDARY_IO     0x170
 #define ATA_PRIMARY_CTRL     0x3F6
 #define ATA_SECONDARY_CTRL   0x376
+#define ATA_SECTOR_SIZE      512
+#define PIO28_READ_CMD       0x20
+#define PIO28_WRITE_CMD      0x30
 
 typedef struct {
     uint16_t io_base;
