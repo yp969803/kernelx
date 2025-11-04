@@ -31,11 +31,13 @@ static bool ata_wait_drq(uint16_t io_base)
 
 int ata_read_sectors(ATA_Device *dev, uint32_t lba, uint8_t sector_count, uint8_t *buffer)
 {
-    if (!dev || !buffer || sector_count == 0)
+    if (!dev || !buffer || sector_count == 0) {
         return -1;
+    }
 
-    if (lba < dev->partition_start || (lba + sector_count) > dev->size_in_sectors)
+    if (lba + sector_count > dev->size_in_sectors) {
         return -1;
+    }
 
     lba += dev->partition_start;
     uint16_t io_base   = dev->io_base;
@@ -109,5 +111,4 @@ void init_disk(void)
     disk.slave           = 0; // Master
     disk.size_in_sectors = 131070;
     disk.partition_start = 1;
-    ata_software_reset(&disk);
 }
