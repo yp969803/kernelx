@@ -17,6 +17,8 @@
 #define ATA_CMD_READ_PIO 0x20
 #define ATA_CMD_WRITE_PIO 0x30
 
+#define ATA_CMD_IDENTIFY 0xEC
+
 typedef struct {
     uint16_t io_base;
     uint16_t ctrl_base;

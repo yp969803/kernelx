@@ -57,7 +57,7 @@ int ata_read_sectors(ATA_Device *dev, uint32_t lba, uint8_t sector_count, uint8_
 
     io_delay400ns(ctrl_base);
 
-    if(!(inb(io_base + 7) & ATA_SR_DRDY)){
+    if (!(inb(io_base + 7) & ATA_SR_DRDY)) {
         return -1;
     }
 
@@ -102,12 +102,39 @@ void ata_software_reset(ATA_Device *dev)
     ata_wait_busy(ctrl_base);
 }
 
+void set_initial_disk_info(void)
+{
+    outb(ATA_PRIMARY_IO + 6, 0xA0);
+    outb(ATA_PRIMARY_IO + 2, 0);
+    outb(ATA_PRIMARY_IO + 3, 0);
+    outb(ATA_PRIMARY_IO + 4, 0);
+    outb(ATA_PRIMARY_IO + 5, 0);
+    outb(ATA_PRIMARY_IO + 7, ATA_CMD_IDENTIFY);
+    io_delay400ns(ATA_PRIMARY_CTRL);
+    ata_wait_busy(ATA_PRIMARY_CTRL);
+    ata_wait_drq(ATA_PRIMARY_IO);
+
+    uint16_t data = 0;
+    for (int j = 0; j < 60; j++) {
+        data = inw(ATA_PRIMARY_IO);
+    }
+
+    uint32_t total_sectors = 0;
+    data                   = inw(ATA_PRIMARY_IO);
+    total_sectors |= data;
+    data = inw(ATA_PRIMARY_IO);
+    total_sectors |= (data << 16);
+
+    disk.size_in_sectors = total_sectors - 1;
+}
+
 void init_disk(void)
 {
+    set_initial_disk_info();
     disk.io_base         = ATA_PRIMARY_IO;
     disk.ctrl_base       = ATA_PRIMARY_CTRL;
     disk.slave           = 0; // Master
-    disk.size_in_sectors = 131070;
     disk.partition_start = 1;
+    set_initial_disk_info();
     ata_software_reset(&disk);
 }
