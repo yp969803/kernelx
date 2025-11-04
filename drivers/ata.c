@@ -57,6 +57,10 @@ int ata_read_sectors(ATA_Device *dev, uint32_t lba, uint8_t sector_count, uint8_
 
     io_delay400ns(ctrl_base);
 
+    if(!(inb(io_base + 7) & ATA_SR_DRDY)){
+        return -1;
+    }
+
     for (uint8_t i = 0; i < sector_count; i++) {
         if (!ata_wait_drq(io_base)) {
             ata_software_reset(dev);
@@ -84,7 +88,7 @@ int ata_read_sectors(ATA_Device *dev, uint32_t lba, uint8_t sector_count, uint8_
     return 0;
 }
 
-int ata_software_reset(ATA_Device *dev)
+void ata_software_reset(ATA_Device *dev)
 {
     uint16_t ctrl_base = dev->ctrl_base;
     uint16_t io_base   = dev->io_base;
@@ -96,12 +100,6 @@ int ata_software_reset(ATA_Device *dev)
     outb(ctrl_base, 0x00); // Clear SRST bit
 
     ata_wait_busy(ctrl_base);
-
-    // // Wait until the drive is ready.
-    // while (!(inb(io_base + 7) & ATA_SR_DRDY))
-    //     ;
-
-    return 0;
 }
 
 void init_disk(void)
