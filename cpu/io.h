@@ -17,11 +17,10 @@ static inline void outb(uint16_t port, uint8_t val)
 static inline uint16_t inw(uint16_t port)
 {
     uint16_t ret;
-    __asm__ volatile (
-        "inw %w1, %w0"     // read 16 bits from port into ret
-        : "=a"(ret)        // output in AX
-        : "Nd"(port)       // input port
-        : "memory"         // tell compiler memory may be affected
+    __asm__ volatile("inw %w1, %w0" // read 16 bits from port into ret
+                     : "=a"(ret)    // output in AX
+                     : "Nd"(port)   // input port
+                     : "memory"     // tell compiler memory may be affected
     );
     return ret;
 }
