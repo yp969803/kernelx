@@ -51,17 +51,6 @@ void main(uint32_t magic, struct multiboot_info *mb_addr)
     initialize_timer();
     create_kernel_task(task1, NULL);
 
-    char *readDist = kmalloc(1024);
-
-    if (ata_read_sectors(&disk, 0, 2, (uint8_t *)readDist) == 0) {
-        kprintf("Read first 2 sectors successfully:\n");
-        for (int i = 0; i < 1024; i++) {
-            kprintf("%c", readDist[i]);
-        }
-    } else {
-        kprintf("Failed to read sectors from disk.\n");
-    }
-
     while (1) {
         halt();
     }
