@@ -18,6 +18,7 @@
 #define ATA_CMD_WRITE_PIO 0x30
 
 #define ATA_CMD_IDENTIFY 0xEC
+#define ATA_CMD_CACHE_FLUSH 0xE7
 
 typedef struct {
     uint16_t io_base;
@@ -32,3 +33,4 @@ extern ATA_Device disk;
 int ata_read_sectors(ATA_Device *dev, uint32_t lba, uint8_t sector_count, uint8_t *buffer);
 void init_disk(void);
 void ata_software_reset(ATA_Device *dev);
+int ata_write_sectors(ATA_Device *dev, uint32_t lba, uint8_t sector_count, const uint8_t *buffer);

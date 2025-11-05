@@ -4,6 +4,11 @@
 
 ATA_Device disk;
 
+static inline void tiny_delay()
+{
+    asm volatile("jmp 1f\n1: jmp 2f\n2:"); // jmp $+2 equivalent
+}
+
 static inline void io_delay400ns(uint16_t ctrl_base)
 {
     for (int i = 0; i < 4; i++) {
@@ -68,14 +73,12 @@ int ata_read_sectors(ATA_Device *dev, uint32_t lba, uint8_t sector_count, uint8_
             return -1;
         }
 
-        // Read 256 words (512 bytes)
         for (int j = 0; j < 256; j++) {
             uint16_t data               = inw(io_base);
             buffer[i * 512 + j * 2]     = (uint8_t)(data & 0xFF);
             buffer[i * 512 + j * 2 + 1] = (uint8_t)(data >> 8);
         }
 
-        // After each sector, check for error or DF (Device Fault)
         uint8_t status = inb(io_base + 7);
         if (status & (ATA_SR_ERR | ATA_SR_DF)) {
             ata_software_reset(dev);
@@ -83,6 +86,69 @@ int ata_read_sectors(ATA_Device *dev, uint32_t lba, uint8_t sector_count, uint8_
             return -1;
         }
     }
+
+    set_interrupt();
+    return 0;
+}
+
+int ata_write_sectors(ATA_Device *dev, uint32_t lba, uint8_t sector_count, const uint8_t *buffer)
+{
+    if (!dev || !buffer || sector_count == 0) {
+        return -1;
+    }
+
+    if (lba + sector_count > dev->size_in_sectors) {
+        return -1;
+    }
+
+    lba += dev->partition_start;
+
+    uint16_t io_base   = dev->io_base;
+    uint16_t ctrl_base = dev->ctrl_base;
+
+    uint8_t drive_head = 0xE0 | (dev->slave << 4) | ((lba >> 24) & 0x0F);
+
+    ata_wait_busy(ctrl_base);
+    clear_interrupt();
+
+    outb(io_base + 6, drive_head);
+    outb(io_base + 2, sector_count);
+    outb(io_base + 3, (uint8_t)(lba & 0xFF));
+    outb(io_base + 4, (uint8_t)((lba >> 8) & 0xFF));
+    outb(io_base + 5, (uint8_t)((lba >> 16) & 0xFF));
+    outb(io_base + 7, ATA_CMD_WRITE_PIO);
+
+    io_delay400ns(ctrl_base);
+
+    if (!(inb(io_base + 7) & ATA_SR_DRDY)) {
+        return -1;
+    }
+
+    for (uint8_t i = 0; i < sector_count; i++) {
+        if (!ata_wait_drq(io_base)) {
+            ata_software_reset(dev);
+            set_interrupt();
+            return -1;
+        }
+
+        // Write 256 words (512 bytes)
+        for (int j = 0; j < 256; j++) {
+            uint16_t data = ((uint16_t)buffer[i * 512 + j * 2 + 1] << 8) | buffer[i * 512 + j * 2];
+            outw(io_base, data);
+            tiny_delay();
+        }
+
+        uint8_t status = inb(io_base + 7);
+        if (status & (ATA_SR_ERR | ATA_SR_DF)) {
+            ata_software_reset(dev);
+            set_interrupt();
+            return -1;
+        }
+    }
+
+    // Flush Cache
+    outb(io_base + 7, ATA_CMD_CACHE_FLUSH);
+    ata_wait_busy(ctrl_base);
 
     set_interrupt();
     return 0;
