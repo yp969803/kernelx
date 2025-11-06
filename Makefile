@@ -3,8 +3,8 @@
 # $^ = all dependencies
 
 # detect all .o files based on their .c source
-C_SOURCES = $(wildcard kernel/*.c drivers/*.c cpu/*.c stdlib/*.c)
-HEADERS = $(wildcard kernel/*.h  drivers/*.h cpu/*.h stdlib/*.h)
+C_SOURCES = $(wildcard kernel/*.c drivers/*.c cpu/*.c stdlib/*.c fs/*.c)
+HEADERS = $(wildcard kernel/*.h  drivers/*.h cpu/*.h stdlib/*.h fs/*.h)
 OBJ_FILES = ${C_SOURCES:.c=.o cpu/isr_keyboard.o cpu/kernel_entry.o cpu/gdt.o cpu/exception_isr.o cpu/isr_pit.o cpu/switch_task.o cpu/syscall_isr.o} 
 
 CC ?= x86_64-elf-gcc
@@ -52,6 +52,7 @@ clean:
 	$(RM) boot/*.o boot/*.bin
 	$(RM) drivers/*.o
 	$(RM) cpu/*.o
+	$(RM) fs/*.o
 	$(RM) stdlib/*.o
 	$(RM) iso/boot/*.elf
 	$(RM) kernelx.iso
