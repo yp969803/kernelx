@@ -12,6 +12,8 @@
 #define RESERVED_CLUSTER 0xFFF0
 #define BAD_CLUSTER 0xFFF7
 
+#define ROOT_CLUSTER 0
+
 typedef struct {
     uint8_t jump_boot[3];
     char oem_name[8];
@@ -34,6 +36,9 @@ typedef struct {
     char volume_label[11];
     char file_system_type[8];
 } __attribute__((packed)) fat_boot_sector_t;
+
+#define ATTR_DIRECTORY 0x10
+#define ATTR_ARCHIVE 0x20
 
 typedef struct {
     char name[11];

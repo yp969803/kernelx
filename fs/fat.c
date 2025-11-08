@@ -1,7 +1,9 @@
 #include "fat.h"
 #include "../drivers/ata.h"
 #include "../kernel/kmalloc.h"
+#include "../kernel/mem.h"
 #include "../kernel/utils.h"
+#include "../stdlib/string.h"
 
 fat_boot_sector_t hda_boot_sector;
 
@@ -68,4 +70,63 @@ int mkfs_fat(void)
 int read_fat_boot_sector(void)
 {
     return ata_read_sectors(0, 1, (uint8_t *)&hda_boot_sector);
+}
+
+int mkdir_fat(const char *name)
+{
+    if (!name || name[0] != '/' || name[1] == '\0') {
+        return ERR;
+    }
+    char dir_name[11];
+    mem_set(dir_name, ' ', 11);
+    int i            = 1;
+    int j            = 0;
+    uint16_t cluster = ROOT_CLUSTER;
+    while (name[i] != '\0') {
+        if (name[i] == '/') {
+
+        } else if (name[i] == '.') {
+            return ERR;
+        } else {
+            dir_name[j++] = name[i++];
+            if (j >= 8) {
+                return ERR;
+            }
+        }
+    }
+}
+
+fat_directory_entry_t *fat_get_directory_entry(uint16_t cluster, const char *name)
+{
+    if (cluster == ROOT_CLUSTER) {
+        uint32_t root_dir_sectors = CEIL_DIV(hda_boot_sector.root_entry_count * 32, SECTOR_SIZE);
+        uint32_t root_dir_start_sector = hda_boot_sector.reserved_sector_count +
+                                         hda_boot_sector.num_fats * hda_boot_sector.fat_size_16;
+        uint32_t total_entries = hda_boot_sector.root_entry_count;
+
+        fat_directory_entry_t *root_dir_entries = kmalloc(root_dir_sectors * SECTOR_SIZE);
+        if (!root_dir_entries) {
+            return NULL;
+        }
+
+        if (ata_read_sectors(root_dir_start_sector, root_dir_sectors,
+                             (uint8_t *)root_dir_entries) != OK) {
+            kfree(root_dir_entries);
+            return NULL;
+        }
+
+        for (uint32_t i = 0; i < total_entries; i++) {
+            if (streq(root_dir_entries[i].name, name, 11) == 0) {
+                fat_directory_entry_t *result = kmalloc(sizeof(fat_directory_entry_t));
+                if (result) {
+                    mem_copy(&root_dir_entries[i], result, sizeof(fat_directory_entry_t));
+                }
+                kfree(root_dir_entries);
+                return result;
+            }
+        }
+        kfree(root_dir_entries);
+    }
+
+    return NULL;
 }
