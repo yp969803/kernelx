@@ -3,6 +3,9 @@
 #include <stdbool.h>
 #include <stdint.h>
 
+#define ERR -1
+#define OK 0
+
 #define CEIL_DIV(a, b) (((a) + (b)-1) / (b))
 
 static inline void halt(void)

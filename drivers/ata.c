@@ -34,21 +34,21 @@ static bool ata_wait_drq(uint16_t io_base)
     return true;
 }
 
-int ata_read_sectors(ATA_Device *dev, uint32_t lba, uint8_t sector_count, uint8_t *buffer)
+int ata_read_sectors(uint32_t lba, uint8_t sector_count, uint8_t *buffer)
 {
-    if (!dev || !buffer || sector_count == 0) {
-        return -1;
+    if (!buffer || sector_count == 0) {
+        return ERR;
     }
 
-    if (lba + sector_count > dev->size_in_sectors) {
-        return -1;
+    if (lba + sector_count > disk.size_in_sectors) {
+        return ERR;
     }
 
-    lba += dev->partition_start;
-    uint16_t io_base   = dev->io_base;
-    uint16_t ctrl_base = dev->ctrl_base;
+    lba += disk.partition_start;
+    uint16_t io_base   = disk.io_base;
+    uint16_t ctrl_base = disk.ctrl_base;
 
-    uint8_t drive_head = 0xE0 | (dev->slave << 4) | ((lba >> 24) & 0x0F);
+    uint8_t drive_head = 0xE0 | (disk.slave << 4) | ((lba >> 24) & 0x0F);
 
     ata_wait_busy(ctrl_base);
     clear_interrupt();
@@ -63,12 +63,12 @@ int ata_read_sectors(ATA_Device *dev, uint32_t lba, uint8_t sector_count, uint8_
     io_delay400ns(ctrl_base);
 
     if (!(inb(io_base + 7) & ATA_SR_DRDY)) {
-        return -1;
+        return ERR;
     }
 
     for (uint8_t i = 0; i < sector_count; i++) {
         if (!ata_wait_drq(io_base)) {
-            ata_software_reset(dev);
+            ata_software_reset();
             set_interrupt();
             return -1;
         }
@@ -81,32 +81,32 @@ int ata_read_sectors(ATA_Device *dev, uint32_t lba, uint8_t sector_count, uint8_
 
         uint8_t status = inb(io_base + 7);
         if (status & (ATA_SR_ERR | ATA_SR_DF)) {
-            ata_software_reset(dev);
+            ata_software_reset();
             set_interrupt();
-            return -1;
+            return ERR;
         }
     }
 
     set_interrupt();
-    return 0;
+    return OK;
 }
 
-int ata_write_sectors(ATA_Device *dev, uint32_t lba, uint8_t sector_count, const uint8_t *buffer)
+int ata_write_sectors(uint32_t lba, uint8_t sector_count, const uint8_t *buffer)
 {
-    if (!dev || !buffer || sector_count == 0) {
-        return -1;
+    if (!buffer || sector_count == 0) {
+        return ERR;
     }
 
-    if (lba + sector_count > dev->size_in_sectors) {
-        return -1;
+    if (lba + sector_count > disk.size_in_sectors) {
+        return ERR;
     }
 
-    lba += dev->partition_start;
+    lba += disk.partition_start;
 
-    uint16_t io_base   = dev->io_base;
-    uint16_t ctrl_base = dev->ctrl_base;
+    uint16_t io_base   = disk.io_base;
+    uint16_t ctrl_base = disk.ctrl_base;
 
-    uint8_t drive_head = 0xE0 | (dev->slave << 4) | ((lba >> 24) & 0x0F);
+    uint8_t drive_head = 0xE0 | (disk.slave << 4) | ((lba >> 24) & 0x0F);
 
     ata_wait_busy(ctrl_base);
     clear_interrupt();
@@ -121,14 +121,14 @@ int ata_write_sectors(ATA_Device *dev, uint32_t lba, uint8_t sector_count, const
     io_delay400ns(ctrl_base);
 
     if (!(inb(io_base + 7) & ATA_SR_DRDY)) {
-        return -1;
+        return ERR;
     }
 
     for (uint8_t i = 0; i < sector_count; i++) {
         if (!ata_wait_drq(io_base)) {
-            ata_software_reset(dev);
+            ata_software_reset();
             set_interrupt();
-            return -1;
+            return ERR;
         }
 
         // Write 256 words (512 bytes)
@@ -140,9 +140,9 @@ int ata_write_sectors(ATA_Device *dev, uint32_t lba, uint8_t sector_count, const
 
         uint8_t status = inb(io_base + 7);
         if (status & (ATA_SR_ERR | ATA_SR_DF)) {
-            ata_software_reset(dev);
+            ata_software_reset();
             set_interrupt();
-            return -1;
+            return ERR;
         }
     }
 
@@ -151,13 +151,13 @@ int ata_write_sectors(ATA_Device *dev, uint32_t lba, uint8_t sector_count, const
     ata_wait_busy(ctrl_base);
 
     set_interrupt();
-    return 0;
+    return OK;
 }
 
-void ata_software_reset(ATA_Device *dev)
+void ata_software_reset(void)
 {
-    uint16_t ctrl_base = dev->ctrl_base;
-    uint16_t io_base   = dev->io_base;
+    uint16_t ctrl_base = disk.ctrl_base;
+    uint16_t io_base   = disk.io_base;
 
     outb(ctrl_base, 0x04); // Set SRST bit
 
@@ -202,5 +202,5 @@ void init_disk(void)
     disk.slave           = 0; // Master
     disk.partition_start = 1;
     set_initial_disk_info();
-    ata_software_reset(&disk);
+    ata_software_reset();
 }

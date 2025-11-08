@@ -3,20 +3,25 @@
 #include <stdint.h>
 
 #define SECTOR_SIZE 512
-#define CLUSTER_SIZE 1024 
+// #define CLUSTER_SIZE 1024
 #define ROOT_ENTRYS 512
 #define FAT_COPIES 2
+
+#define FREE_CLUSTER 0x0000
+#define END_OF_CLUSTER_CHAIN 0xFFFF
+#define RESERVED_CLUSTER 0xFFF0
+#define BAD_CLUSTER 0xFFF7
 
 typedef struct {
     uint8_t jump_boot[3];
     char oem_name[8];
     uint16_t bytes_per_sector;
     uint8_t sectors_per_cluster;
-    uint16_t reserved_sector_count;  // 1 for FAT12/16
-    uint8_t num_fats;    // 2 for FAT12/16
+    uint16_t reserved_sector_count; // 1 for FAT12/16
+    uint8_t num_fats;               // 2 for FAT12/16
     uint16_t root_entry_count;
     uint16_t total_sectors_16;
-    uint8_t media;  // 0xF8 for fixed drives, 0xF0 for removable drives
+    uint8_t media; // 0xF8 for fixed drives, 0xF0 for removable drives
     uint16_t fat_size_16;
     uint16_t sectors_per_track;
     uint16_t num_heads;

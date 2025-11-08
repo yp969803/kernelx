@@ -30,7 +30,7 @@ typedef struct {
 
 extern ATA_Device disk;
 
-int ata_read_sectors(ATA_Device *dev, uint32_t lba, uint8_t sector_count, uint8_t *buffer);
+int ata_read_sectors(uint32_t lba, uint8_t sector_count, uint8_t *buffer);
 void init_disk(void);
-void ata_software_reset(ATA_Device *dev);
-int ata_write_sectors(ATA_Device *dev, uint32_t lba, uint8_t sector_count, const uint8_t *buffer);
+void ata_software_reset();
+int ata_write_sectors(uint32_t lba, uint8_t sector_count, const uint8_t *buffer);
