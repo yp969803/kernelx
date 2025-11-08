@@ -1,5 +1,6 @@
 #include "ata.h"
 #include "../cpu/io.h"
+#include "../fs/fat.h"
 #include "../kernel/utils.h"
 
 ATA_Device disk;
@@ -203,4 +204,5 @@ void init_disk(void)
     disk.partition_start = 1;
     set_initial_disk_info();
     ata_software_reset();
+    mkfs_fat();
 }

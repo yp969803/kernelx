@@ -28,8 +28,15 @@ int mkfs_fat(void)
     hda_boot_sector.root_entry_count      = ROOT_ENTRYS;
 
     uint16_t root_dir_sectors = CEIL_DIV(ROOT_ENTRYS * 32, SECTOR_SIZE);
+
+    uint8_t sectors_per_cluster = hda_boot_sector.sectors_per_cluster;
+    uint16_t fat_size_16        = hda_boot_sector.fat_size_16;
+
     cal_fat_layout(total_sectors - hda_boot_sector.reserved_sector_count - root_dir_sectors,
-                   &hda_boot_sector.sectors_per_cluster, &hda_boot_sector.fat_size_16);
+                   &sectors_per_cluster, &fat_size_16);
+
+    hda_boot_sector.sectors_per_cluster = sectors_per_cluster;
+    hda_boot_sector.fat_size_16         = fat_size_16;
 
     hda_boot_sector.total_sectors_32 = total_sectors;
 

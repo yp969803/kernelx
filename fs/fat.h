@@ -49,3 +49,5 @@ typedef struct {
     uint16_t first_cluster_low;
     uint32_t file_size;
 } __attribute__((packed)) fat_directory_entry_t;
+
+int mkfs_fat(void);
