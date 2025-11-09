@@ -8,11 +8,13 @@
 #define FAT_COPIES 2
 
 #define FREE_CLUSTER 0x0000
-#define END_OF_CLUSTER_CHAIN 0xFFFF
+#define LAST_CLUSTER 0xFFEF
+#define END_OF_CLUSTER_CHAIN 0xFFF8
 #define RESERVED_CLUSTER 0xFFF0
 #define BAD_CLUSTER 0xFFF7
 
 #define ROOT_CLUSTER 0
+#define DIR_ENTRY_RM 0XE5
 
 typedef struct {
     uint8_t jump_boot[3];

@@ -185,7 +185,7 @@ void *krealloc(void *ptr, uint32_t size)
 
     void *newPtr = kmalloc(size);
     if (newPtr != NULL) {
-        memory_copy(ptr, newPtr, size);
+        mem_copy(ptr, newPtr, size);
         kfree(ptr);
     }
     return newPtr;

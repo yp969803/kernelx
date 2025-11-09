@@ -20,7 +20,7 @@ extern uint32_t initial_page_dir[1024];
 #define INIT_PAGE_DIR_PHY (uint32_t *)((uint32_t)initial_page_dir - KERNEL_START)
 
 void *memmove(void *dest, const void *src, size_t n);
-void memory_copy(void *src, void *dest, size_t nbytes);
+void mem_copy(void *src, void *dest, size_t nbytes);
 void mem_set(void *dst, uint8_t val, size_t count);
 void init_memory(uint32_t memHigh, uint32_t physicalAllocStart);
 void invalidate(uint32_t vaddr);
