@@ -311,13 +311,13 @@ int fat_set_dir_entry(uint16_t cluster, fat_directory_entry_t *entry, uint16_t *
 
         fat_directory_entry_t *root_dir_entries = kmalloc(root_dir_sectors * SECTOR_SIZE);
         if (!root_dir_entries) {
-            return NULL;
+            return ERR;
         }
 
         if (ata_read_sectors(root_dir_start_sector, root_dir_sectors,
                              (uint8_t *)root_dir_entries) != OK) {
             kfree(root_dir_entries);
-            return NULL;
+            return ERR;
         }
 
         bool free_slot_found = false;
