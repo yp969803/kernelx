@@ -58,3 +58,4 @@ typedef struct {
 } __attribute__((packed)) fat_directory_entry_t;
 
 int mkfs_fat(void);
+int mkdir_fat(const char *name);
