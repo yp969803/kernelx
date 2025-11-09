@@ -3,6 +3,7 @@
 #include "../cpu/idt.h"
 #include "../drivers/ata.h"
 #include "../drivers/timer.h"
+#include "../fs/fat.h"
 #include "../stdlib/stdio.h"
 #include "kmalloc.h"
 #include "mem.h"
