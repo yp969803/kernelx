@@ -1,5 +1,4 @@
 #include "string.h"
-#include <stdbool.h>
 
 #define INT_MAX 2147483647
 
