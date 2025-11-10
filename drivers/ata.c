@@ -71,7 +71,7 @@ int ata_read_sectors(uint32_t lba, uint8_t sector_count, uint8_t *buffer)
         if (!ata_wait_drq(io_base)) {
             ata_software_reset();
             set_interrupt();
-            return -1;
+            return ERR;
         }
 
         for (int j = 0; j < 256; j++) {

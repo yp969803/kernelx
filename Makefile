@@ -35,7 +35,7 @@ run_bochs: iso
 	bochs -f bochsrc
 
 %.o: %.c ${HEADERS}
-	$(CC) -g -m32 -ffreestanding -fno-pie -fno-stack-protector -O1 -c $< -o $@ # -g for debugging
+	$(CC) -g -m32 -ffreestanding -fno-pie -fno-stack-protector -O0 -c $< -o $@ # -g for debugging
 
 %.o: %.asm
 	nasm $< -f elf -o $@

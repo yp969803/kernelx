@@ -11,7 +11,7 @@ static void cal_fat_layout(uint32_t sectors, uint8_t *sec_per_clus, uint16_t *fa
 {
     uint8_t sectors_per_cluster = 1;
     uint16_t max_clusters       = 65536 - 16; // Maximum number of clusters for FAT16
-    uint32_t fat_sectors;
+    uint16_t fat_sectors;
     uint32_t clusters_count;
 
     while (1) {
@@ -176,7 +176,7 @@ int mkdir_fat(const char *name)
 fat_directory_entry_t *fat_get_directory_entry(uint16_t cluster, const char *name)
 {
     if (cluster == ROOT_CLUSTER) {
-        uint32_t root_dir_sectors = CEIL_DIV(hda_boot_sector.root_entry_count * 32, SECTOR_SIZE);
+        uint8_t root_dir_sectors = CEIL_DIV(hda_boot_sector.root_entry_count * 32, SECTOR_SIZE);
         uint32_t root_dir_start_sector = hda_boot_sector.reserved_sector_count +
                                          hda_boot_sector.num_fats * hda_boot_sector.fat_size_16;
         uint32_t total_entries = hda_boot_sector.root_entry_count;
@@ -304,7 +304,7 @@ int fat_set_dir_entry(uint16_t cluster, fat_directory_entry_t *entry, uint16_t *
     }
 
     if (cluster == ROOT_CLUSTER) {
-        uint32_t root_dir_sectors = CEIL_DIV(hda_boot_sector.root_entry_count * 32, SECTOR_SIZE);
+        uint8_t root_dir_sectors = CEIL_DIV(hda_boot_sector.root_entry_count * 32, SECTOR_SIZE);
         uint32_t root_dir_start_sector = hda_boot_sector.reserved_sector_count +
                                          hda_boot_sector.num_fats * hda_boot_sector.fat_size_16;
         uint32_t total_entries = hda_boot_sector.root_entry_count;
