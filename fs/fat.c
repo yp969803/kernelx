@@ -178,7 +178,7 @@ int mkdir_fat(const char *name)
     return OK;
 }
 
-fat_directory_entry_t *fat_get_directory_entry(uint16_t cluster, const char *name)
+fat_directory_entry_t *fat_get_directory_entry(uint16_t cluster, const char name[11])
 {
     if (cluster == ROOT_CLUSTER) {
         uint8_t root_dir_sectors = CEIL_DIV(hda_boot_sector.root_entry_count * 32, SECTOR_SIZE);
