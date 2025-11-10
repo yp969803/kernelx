@@ -10,13 +10,13 @@ fat_boot_sector_t hda_boot_sector;
 static void cal_fat_layout(uint32_t sectors, uint8_t *sec_per_clus, uint16_t *fat_size)
 {
     uint8_t sectors_per_cluster = 1;
-    uint16_t max_clusters       = 65536 - 16; // Maximum number of clusters for FAT16
+    uint16_t max_clusters       = 65024; // Maximum number of clusters for FAT16 
     uint16_t fat_sectors;
     uint32_t clusters_count;
 
     while (1) {
         clusters_count = sectors / sectors_per_cluster;
-        fat_sectors    = CEIL_DIV(clusters_count * 2, SECTOR_SIZE);
+        fat_sectors    = clusters_count * 2 / SECTOR_SIZE;
         sectors        = sectors - (FAT_COPIES * fat_sectors);
         if (clusters_count <= max_clusters) {
             break;
