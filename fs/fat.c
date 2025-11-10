@@ -330,7 +330,7 @@ int fat_set_dir_entry(uint16_t cluster, fat_directory_entry_t *entry, uint16_t *
         for (uint32_t i = 0; i < total_entries; i++) {
             uint8_t first_byte = root_dir_entries[i].name[0];
 
-            if (first_byte != 0x00 || first_byte != DIR_ENTRY_RM) {
+            if (first_byte != 0x00 && first_byte != DIR_ENTRY_RM) {
                 continue;
             }
             mem_copy(entry, &root_dir_entries[i], sizeof(fat_directory_entry_t));
@@ -393,7 +393,7 @@ int fat_set_dir_entry(uint16_t cluster, fat_directory_entry_t *entry, uint16_t *
              i++) {
             uint8_t first_byte = dir_entries[i].name[0];
 
-            if (first_byte != 0x00 || first_byte != DIR_ENTRY_RM) {
+            if (first_byte != 0x00 && first_byte != DIR_ENTRY_RM) {
                 continue;
             }
             mem_copy(entry, &dir_entries[i], sizeof(fat_directory_entry_t));
