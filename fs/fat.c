@@ -205,7 +205,7 @@ fat_directory_entry_t *fat_get_directory_entry(uint16_t cluster, const char name
             if (first_byte == DIR_ENTRY_RM) {
                 continue;
             }
-            if (streq(root_dir_entries[i].name, name, 11) == 0) {
+            if (streq(root_dir_entries[i].name, name, 11)) {
                 fat_directory_entry_t *result = kmalloc(sizeof(fat_directory_entry_t));
                 if (result) {
                     mem_copy(&root_dir_entries[i], result, sizeof(fat_directory_entry_t));
@@ -274,7 +274,7 @@ fat_directory_entry_t *fat_get_directory_entry(uint16_t cluster, const char name
         if (first_byte == DIR_ENTRY_RM) {
             continue;
         }
-        if (streq(dir_entries[i].name, name, 11) == 0) {
+        if (streq(dir_entries[i].name, name, 11)) {
             fat_directory_entry_t *result = kmalloc(sizeof(fat_directory_entry_t));
             if (result) {
                 mem_copy(&dir_entries[i], result, sizeof(fat_directory_entry_t));
