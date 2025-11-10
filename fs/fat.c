@@ -10,7 +10,7 @@ fat_boot_sector_t hda_boot_sector;
 static void cal_fat_layout(uint32_t sectors, uint8_t *sec_per_clus, uint16_t *fat_size)
 {
     uint8_t sectors_per_cluster = 1;
-    uint16_t max_clusters       = 65024; // Maximum number of clusters for FAT16 
+    uint16_t max_clusters       = 65024; // Maximum number of clusters for FAT16
     uint16_t fat_sectors;
     uint32_t clusters_count;
 
@@ -69,9 +69,9 @@ int mkfs_fat(void)
     fat_kmalloc[1] = END_OF_CLUSTER_CHAIN;
 
     for (uint32_t i = 0; i < FAT_COPIES; i++) {
-        if (ata_write_sectors(hda_boot_sector.reserved_sector_count +
-                                  i * hda_boot_sector.fat_size_16,
-                              hda_boot_sector.fat_size_16, (const uint8_t *)fat_kmalloc) != OK) {
+        if (ata_write_sectors(
+                hda_boot_sector.reserved_sector_count + i * hda_boot_sector.fat_size_16,
+                (uint8_t)hda_boot_sector.fat_size_16, (const uint8_t *)fat_kmalloc) != OK) {
             return ERR;
         }
     }
@@ -150,6 +150,11 @@ int mkdir_fat(const char *name)
 
     fat_directory_entry_t *dir_entries = kmalloc(hda_boot_sector.sectors_per_cluster * SECTOR_SIZE);
     mem_set(dir_entries, 0, hda_boot_sector.sectors_per_cluster * SECTOR_SIZE);
+
+    uint32_t *dir_entries_u32 = (uint32_t *)dir_entries;
+
+    dir_entries_u32[0] = new_cluster; // "." entry
+    dir_entries_u32[1] = cluster;     // ".." entry
 
     if (ata_write_sectors(new_cluster_sector, hda_boot_sector.sectors_per_cluster,
                           (const uint8_t *)dir_entries) != OK) {
@@ -261,7 +266,7 @@ fat_directory_entry_t *fat_get_directory_entry(uint16_t cluster, const char *nam
 
     kfree(fat_table);
 
-    for (uint32_t i = 0; i < (total_sectors * SECTOR_SIZE) / sizeof(fat_directory_entry_t); i++) {
+    for (uint32_t i = 2; i < (total_sectors * SECTOR_SIZE) / sizeof(fat_directory_entry_t); i++) {
         uint8_t first_byte = dir_entries[i].name[0];
         if (first_byte == 0x00) {
             break;
@@ -289,8 +294,8 @@ uint16_t *get_fat_structure(void)
         return NULL;
     }
 
-    if (ata_read_sectors(hda_boot_sector.reserved_sector_count, hda_boot_sector.fat_size_16,
-                         (uint8_t *)fat_table) != OK) {
+    if (ata_read_sectors(hda_boot_sector.reserved_sector_count,
+                         (uint8_t)hda_boot_sector.fat_size_16, (uint8_t *)fat_table) != OK) {
         kfree(fat_table);
         return NULL;
     }
@@ -358,6 +363,8 @@ int fat_set_dir_entry(uint16_t cluster, fat_directory_entry_t *entry, uint16_t *
 
     uint16_t current = cluster;
 
+    bool first_iteration = true;
+
     while (current >= 0x0002 && current <= LAST_CLUSTER) {
 
         uint32_t start_sector =
@@ -374,8 +381,15 @@ int fat_set_dir_entry(uint16_t cluster, fat_directory_entry_t *entry, uint16_t *
         }
 
         bool free_slot_found = false;
-        for (uint32_t i = 0; i < (hda_boot_sector.sectors_per_cluster * SECTOR_SIZE) /
-                                     sizeof(fat_directory_entry_t);
+
+        uint32_t i = 0;
+        if (first_iteration) {
+            i               = 2; // Skip "." and ".." entries
+            first_iteration = false;
+        }
+
+        for (; i <
+               (hda_boot_sector.sectors_per_cluster * SECTOR_SIZE) / sizeof(fat_directory_entry_t);
              i++) {
             uint8_t first_byte = dir_entries[i].name[0];
 
@@ -465,9 +479,9 @@ int fat_write_fat_table(uint16_t *fat_table)
     }
 
     for (uint32_t i = 0; i < FAT_COPIES; i++) {
-        if (ata_write_sectors(hda_boot_sector.reserved_sector_count +
-                                  i * hda_boot_sector.fat_size_16,
-                              hda_boot_sector.fat_size_16, (const uint8_t *)fat_table) != OK) {
+        if (ata_write_sectors(
+                hda_boot_sector.reserved_sector_count + i * hda_boot_sector.fat_size_16,
+                (uint8_t)hda_boot_sector.fat_size_16, (const uint8_t *)fat_table) != OK) {
             return ERR;
         }
     }
