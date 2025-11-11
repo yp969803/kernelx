@@ -4,8 +4,69 @@
 #include "../kernel/mem.h"
 #include "../kernel/utils.h"
 #include "../stdlib/string.h"
+#include <stdbool.h>
 
 fat_boot_sector_t hda_boot_sector;
+
+bool dot_only_in_last_entry(const char *name)
+{
+
+    int i = 0;
+
+    int slash_pos = -1;
+    int dot_pos   = -1;
+    int dot_count = 0;
+
+    while (name[i] != '\0') {
+        if (name[i] == '.') {
+            dot_pos = i;
+            if (name[i + 1] == '\0') {
+                return false;
+            }
+            dot_count++;
+        }
+        if (name[i] == '/') {
+            slash_pos = i;
+        }
+
+        i++;
+    }
+
+    if (dot_count == 0) {
+        return true;
+    }
+
+    if (dot_count > 1) {
+        return false;
+    }
+
+    if (dot_pos < slash_pos) {
+        return false;
+    }
+
+    return true;
+}
+
+void rearrange_name(char *name)
+{
+    char ext[3];
+    for (int i = 0; i < 11; i++) {
+        if (name[i] == '.') {
+            int j = 0;
+            i++;
+            while (i < 11 && j < 3) {
+                ext[j]  = name[i];
+                name[i] = ' ';
+                i++;
+                j++;
+            }
+            break;
+        }
+    }
+    for (int i = 8, j = 0; j < 3; i++, j++) {
+        name[i] = ext[j];
+    }
+}
 
 static void cal_fat_layout(uint32_t sectors, uint8_t *sec_per_clus, uint16_t *fat_size)
 {
@@ -115,7 +176,7 @@ int mkdir_fat(const char *name)
             return ERR;
         } else {
             dir_name[j++] = name[i++];
-            if (j > 10) {
+            if (j > 8) {
                 return ERR;
             }
         }
@@ -441,6 +502,135 @@ int fat_set_dir_entry(uint16_t cluster, fat_directory_entry_t *entry, uint16_t *
     return OK;
 }
 
+int fat_rm_dir_entry(uint16_t cluster, fat_directory_entry_t *entry)
+{
+    if (entry == NULL) {
+        return ERR;
+    }
+
+    if (cluster == ROOT_CLUSTER) {
+        uint8_t root_dir_sectors = CEIL_DIV(hda_boot_sector.root_entry_count * 32, SECTOR_SIZE);
+
+        uint32_t root_dir_start_sector = hda_boot_sector.reserved_sector_count +
+                                         hda_boot_sector.num_fats * hda_boot_sector.fat_size_16;
+
+        uint32_t total_entries = hda_boot_sector.root_entry_count;
+
+        fat_directory_entry_t *root_dir_entries = kmalloc(root_dir_sectors * SECTOR_SIZE);
+        if (!root_dir_entries) {
+            return ERR;
+        }
+
+        if (ata_read_sectors(root_dir_start_sector, root_dir_sectors,
+                             (uint8_t *)root_dir_entries) != OK) {
+            kfree(root_dir_entries);
+            return ERR;
+        }
+
+        bool slot_found = false;
+
+        for (uint32_t i = 0; i < total_entries; i++) {
+            uint8_t first_byte = root_dir_entries[i].name[0];
+
+            if (first_byte == 0x00) {
+                kfree(root_dir_entries);
+                return ERR;
+            }
+
+            if (first_byte == DIR_ENTRY_RM) {
+                continue;
+            }
+
+            if (streq(root_dir_entries[i].name, entry->name, 11)) {
+                root_dir_entries[i].name[0] = DIR_ENTRY_RM;
+                slot_found                  = true;
+                break;
+            }
+        }
+
+        if (!slot_found) {
+            kfree(root_dir_entries);
+            return ERR;
+        }
+
+        if (ata_write_sectors(root_dir_start_sector, root_dir_sectors,
+                              (const uint8_t *)root_dir_entries) != OK) {
+            kfree(root_dir_entries);
+            return ERR;
+        }
+
+        kfree(root_dir_entries);
+        return OK;
+    }
+
+    if (cluster == 1 || cluster > LAST_CLUSTER) {
+        return ERR;
+    }
+
+    uint32_t first_data_sector = hda_boot_sector.reserved_sector_count +
+                                 hda_boot_sector.num_fats * hda_boot_sector.fat_size_16 +
+                                 CEIL_DIV(hda_boot_sector.root_entry_count * 32, SECTOR_SIZE);
+
+    uint16_t current = cluster;
+
+    bool first_iteration = true;
+
+    while (current >= 0x0002 && current <= LAST_CLUSTER) {
+
+        uint32_t start_sector =
+            first_data_sector + (current - 2) * hda_boot_sector.sectors_per_cluster;
+        fat_directory_entry_t *dir_entries =
+            kmalloc(hda_boot_sector.sectors_per_cluster * SECTOR_SIZE);
+        if (!dir_entries) {
+            return ERR;
+        }
+        if (ata_read_sectors(start_sector, hda_boot_sector.sectors_per_cluster,
+                             (uint8_t *)dir_entries) != OK) {
+            kfree(dir_entries);
+            return ERR;
+        }
+
+        bool slot_found = false;
+
+        uint32_t i = 0;
+        if (first_iteration) {
+            i               = 2; // Skip "." and ".." entries
+            first_iteration = false;
+        }
+
+        for (; i <
+               (hda_boot_sector.sectors_per_cluster * SECTOR_SIZE) / sizeof(fat_directory_entry_t);
+             i++) {
+            uint8_t first_byte = dir_entries[i].name[0];
+
+            if (first_byte == 0x00) {
+                kfree(dir_entries);
+                return ERR;
+            }
+
+            if (first_byte == DIR_ENTRY_RM) {
+                continue;
+            }
+            if (streq(dir_entries[i].name, entry->name, 11)) {
+                dir_entries[i].name[0] = DIR_ENTRY_RM;
+                slot_found             = true;
+                break;
+            }
+        }
+        if (slot_found) {
+            if (ata_write_sectors(start_sector, hda_boot_sector.sectors_per_cluster,
+                                  (const uint8_t *)dir_entries) != OK) {
+                kfree(dir_entries);
+                return ERR;
+            }
+            kfree(dir_entries);
+            return OK;
+        }
+    }
+
+    return ERR;
+}
+
 uint16_t fat_return_free_cluster(uint16_t *fat_table)
 {
     if (!fat_table) {
@@ -485,5 +675,88 @@ int fat_write_fat_table(uint16_t *fat_table)
             return ERR;
         }
     }
+    return OK;
+}
+
+void fat_free_fat_table_clusters(uint16_t start_cluster, uint16_t *fat_table)
+{
+    if (!fat_table || start_cluster < 2 || start_cluster > LAST_CLUSTER) {
+        return;
+    }
+
+    uint16_t current = start_cluster;
+
+    while (current >= 0x0002 && current < END_OF_CLUSTER_CHAIN) {
+        uint16_t next      = fat_table[current];
+        fat_table[current] = FREE_CLUSTER;
+        current            = next;
+    }
+}
+
+int fat_rm_entry(const char *name)
+{
+
+    if (!name || name[0] != '/' || name[1] == '\0') {
+        return ERR;
+    }
+
+    if (!dot_only_in_last_entry(name)) {
+        return ERR;
+    }
+
+    char dir_name[11];
+    mem_set(dir_name, ' ', 11);
+    int i            = 1;
+    int j            = 0;
+    uint16_t cluster = ROOT_CLUSTER;
+
+    while (name[i] != '\0') {
+        if (name[i] == '/') {
+            fat_directory_entry_t *entry = fat_get_directory_entry(cluster, dir_name);
+            if (!entry) {
+                return ERR;
+            }
+
+            if (entry->attr != ATTR_DIRECTORY) {
+                kfree(entry);
+                return ERR;
+            }
+
+            cluster = entry->first_cluster_low;
+            kfree(entry);
+
+            mem_set(dir_name, ' ', 11);
+            j = 0;
+            i++;
+        } else {
+            dir_name[j++] = name[i++];
+            if (j > 10) {
+                return ERR;
+            }
+        }
+    }
+
+    rearrange_name(dir_name);
+
+    fat_directory_entry_t *existing_entry = fat_get_directory_entry(cluster, dir_name);
+    if (!existing_entry) {
+        return ERR;
+    }
+
+    uint16_t *fat_table = get_fat_structure();
+    if (!fat_table) {
+        return ERR;
+    }
+
+    fat_free_fat_table_clusters(existing_entry->first_cluster_low, fat_table);
+
+    if (fat_rm_dir_entry(cluster, existing_entry) != OK || fat_write_fat_table(fat_table) != OK) {
+        kfree(existing_entry);
+        kfree(fat_table);
+        return ERR;
+    }
+
+    kfree(existing_entry);
+    kfree(fat_table);
     return OK;
 }

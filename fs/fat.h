@@ -60,9 +60,10 @@ typedef struct {
 int mkfs_fat(void);
 int mkdir_fat(const char *name);
 int read_fat_boot_sector(void);
-fat_directory_entry_t *fat_get_directory_entry(uint16_t cluster, const char *name);
+fat_directory_entry_t *fat_get_directory_entry(uint16_t cluster, const char name[11]);
 uint16_t *get_fat_structure(void);
 int fat_set_dir_entry(uint16_t cluster, fat_directory_entry_t *entry, uint16_t *fat_table);
 uint16_t fat_return_free_cluster(uint16_t *fat_table);
 uint16_t fat_return_last_cluster(uint16_t *fat_table, uint16_t start_cluster);
 int fat_write_fat_table(uint16_t *fat_table);
+int fat_rm_entry(const char *name);
