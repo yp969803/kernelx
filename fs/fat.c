@@ -156,7 +156,7 @@ int mkdir_fat(const char *name)
     uint16_t cluster = ROOT_CLUSTER;
     while (name[i] != '\0') {
         if (name[i] == '/') {
-            fat_directory_entry_t *entry = fat_get_directory_entry(cluster, dir_name);
+            fat_directory_entry_t *entry = fat_get_dir_entry(cluster, dir_name);
             if (!entry) {
                 return ERR;
             }
@@ -182,7 +182,7 @@ int mkdir_fat(const char *name)
         }
     }
 
-    fat_directory_entry_t *existing_entry = fat_get_directory_entry(cluster, dir_name);
+    fat_directory_entry_t *existing_entry = fat_get_dir_entry(cluster, dir_name);
     if (existing_entry) {
         kfree(existing_entry);
         return ERR;
@@ -239,7 +239,7 @@ int mkdir_fat(const char *name)
     return OK;
 }
 
-fat_directory_entry_t *fat_get_directory_entry(uint16_t cluster, const char name[11])
+fat_directory_entry_t *fat_get_dir_entry(uint16_t cluster, const char name[11])
 {
     if (cluster == ROOT_CLUSTER) {
         uint8_t root_dir_sectors = CEIL_DIV(hda_boot_sector.root_entry_count * 32, SECTOR_SIZE);
@@ -712,7 +712,7 @@ int fat_rm_entry(const char *name)
 
     while (name[i] != '\0') {
         if (name[i] == '/') {
-            fat_directory_entry_t *entry = fat_get_directory_entry(cluster, dir_name);
+            fat_directory_entry_t *entry = fat_get_dir_entry(cluster, dir_name);
             if (!entry) {
                 return ERR;
             }
@@ -738,7 +738,7 @@ int fat_rm_entry(const char *name)
 
     rearrange_name(dir_name);
 
-    fat_directory_entry_t *existing_entry = fat_get_directory_entry(cluster, dir_name);
+    fat_directory_entry_t *existing_entry = fat_get_dir_entry(cluster, dir_name);
     if (!existing_entry) {
         return ERR;
     }
@@ -778,7 +778,7 @@ int mkfile_fat(const char *name)
     uint16_t cluster = ROOT_CLUSTER;
     while (name[i] != '\0') {
         if (name[i] == '/') {
-            fat_directory_entry_t *entry = fat_get_directory_entry(cluster, dir_name);
+            fat_directory_entry_t *entry = fat_get_dir_entry(cluster, dir_name);
             if (!entry) {
                 return ERR;
             }
@@ -804,7 +804,7 @@ int mkfile_fat(const char *name)
 
     rearrange_name(dir_name);
 
-    fat_directory_entry_t *existing_entry = fat_get_directory_entry(cluster, dir_name);
+    fat_directory_entry_t *existing_entry = fat_get_dir_entry(cluster, dir_name);
     if (existing_entry) {
         kfree(existing_entry);
         return ERR;
