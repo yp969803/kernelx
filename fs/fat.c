@@ -396,18 +396,20 @@ int fat_set_dir_entry(uint16_t cluster, fat_directory_entry_t *entry, uint16_t *
 
     bool first_iteration = true;
 
+    fat_directory_entry_t *dir_entries = kmalloc(hda_boot_sector.sectors_per_cluster * SECTOR_SIZE);
+
     while (current >= 0x0002 && current <= LAST_CLUSTER) {
 
         uint32_t start_sector =
             first_data_sector + (current - 2) * hda_boot_sector.sectors_per_cluster;
-        fat_directory_entry_t *dir_entries =
-            kmalloc(hda_boot_sector.sectors_per_cluster * SECTOR_SIZE);
+
         if (!dir_entries) {
             return ERR;
         }
         if (ata_read_sectors(start_sector, hda_boot_sector.sectors_per_cluster,
                              (uint8_t *)dir_entries) != OK) {
             kfree(dir_entries);
+            kfree(fat_table);
             return ERR;
         }
 
@@ -435,8 +437,10 @@ int fat_set_dir_entry(uint16_t cluster, fat_directory_entry_t *entry, uint16_t *
             if (ata_write_sectors(start_sector, hda_boot_sector.sectors_per_cluster,
                                   (const uint8_t *)dir_entries) != OK) {
                 kfree(dir_entries);
+                kfree(fat_table);
                 return ERR;
             }
+            kfree(fat_table);
             kfree(dir_entries);
             return OK;
         }
@@ -456,7 +460,6 @@ int fat_set_dir_entry(uint16_t cluster, fat_directory_entry_t *entry, uint16_t *
     uint32_t start_sector =
         first_data_sector + (new_cluster - 2) * hda_boot_sector.sectors_per_cluster;
 
-    fat_directory_entry_t *dir_entries = kmalloc(hda_boot_sector.sectors_per_cluster * SECTOR_SIZE);
     mem_set(dir_entries, 0, hda_boot_sector.sectors_per_cluster * SECTOR_SIZE);
 
     dir_entries[0] = *entry;
@@ -469,6 +472,7 @@ int fat_set_dir_entry(uint16_t cluster, fat_directory_entry_t *entry, uint16_t *
     }
 
     kfree(dir_entries);
+    kfree(fat_table);
     return OK;
 }
 
