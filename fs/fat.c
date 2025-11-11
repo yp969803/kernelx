@@ -732,46 +732,6 @@ int mkfile_fat(const char *name)
     return OK;
 }
 
-int fat_read_file(uint16_t start_cluster, uint8_t *buffer, uint32_t size)
-{
-    if (start_cluster < 2 || start_cluster > LAST_CLUSTER || !buffer || size == 0) {
-        return ERR;
-    }
-
-    uint16_t *fat_table = get_fat_structure();
-    if (!fat_table) {
-        return ERR;
-    }
-
-    uint32_t first_data_sector = hda_boot_sector.reserved_sector_count +
-                                 hda_boot_sector.num_fats * hda_boot_sector.fat_size_16 +
-                                 CEIL_DIV(hda_boot_sector.root_entry_count * 32, SECTOR_SIZE);
-
-    uint16_t current    = start_cluster;
-    uint32_t bytes_read = 0;
-    uint8_t *buf_ptr    = buffer;
-
-    while (current >= 0x0002 && current < END_OF_CLUSTER_CHAIN && bytes_read < size) {
-        uint32_t start_sector =
-            first_data_sector + (current - 2) * hda_boot_sector.sectors_per_cluster;
-
-        uint32_t cluster_size = hda_boot_sector.sectors_per_cluster * SECTOR_SIZE;
-        uint32_t to_read      = MIN(cluster_size, size - bytes_read);
-
-        if (ata_read_sectors(start_sector, hda_boot_sector.sectors_per_cluster, buf_ptr) != OK) {
-            kfree(fat_table);
-            return ERR;
-        }
-
-        buf_ptr += to_read;
-        bytes_read += to_read;
-        current = fat_table[current];
-    }
-
-    kfree(fat_table);
-    return OK;
-}
-
 //  requires full path
 fat_directory_entry_t *fat_lookup(const char *name, char *dir_name, uint16_t *cluster)
 {
@@ -816,4 +776,47 @@ fat_directory_entry_t *fat_lookup(const char *name, char *dir_name, uint16_t *cl
 
     fat_directory_entry_t *existing_entry = fat_get_dir_entry(*cluster, dir_name);
     return existing_entry;
+}
+
+int fat_read_file(uint16_t *cluster, uint8_t *buffer, uint32_t size)
+{
+    if (*cluster < 2 || *cluster > LAST_CLUSTER || !buffer || size == 0) {
+        return ERR;
+    }
+
+    if (*cluster == END_OF_CLUSTER_CHAIN) {
+        return OK;
+    }
+
+    uint16_t *fat_table = get_fat_structure();
+    if (!fat_table) {
+        return ERR;
+    }
+
+    uint32_t first_data_sector = hda_boot_sector.reserved_sector_count +
+                                 hda_boot_sector.num_fats * hda_boot_sector.fat_size_16 +
+                                 CEIL_DIV(hda_boot_sector.root_entry_count * 32, SECTOR_SIZE);
+
+    uint32_t bytes_read = 0;
+    uint8_t *buf_ptr    = buffer;
+
+    while (*cluster >= 0x0002 && *cluster < END_OF_CLUSTER_CHAIN && bytes_read < size) {
+        uint32_t start_sector =
+            first_data_sector + (*cluster - 2) * hda_boot_sector.sectors_per_cluster;
+
+        uint32_t cluster_size = hda_boot_sector.sectors_per_cluster * SECTOR_SIZE;
+        uint32_t to_read      = MIN(cluster_size, size - bytes_read);
+
+        if (ata_read_sectors(start_sector, hda_boot_sector.sectors_per_cluster, buf_ptr) != OK) {
+            kfree(fat_table);
+            return ERR;
+        }
+
+        buf_ptr += to_read;
+        bytes_read += to_read;
+        *cluster = fat_table[*cluster];
+    }
+
+    kfree(fat_table);
+    return OK;
 }

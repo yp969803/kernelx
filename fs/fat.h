@@ -16,6 +16,9 @@
 #define ROOT_CLUSTER 0
 #define DIR_ENTRY_RM 0XE5
 
+#define MIN(a, b) ((a) < (b) ? (a) : (b))
+#define MAX(a, b) ((a) > (b) ? (a) : (b))
+
 typedef struct {
     uint8_t jump_boot[3];
     char oem_name[8];
@@ -69,3 +72,4 @@ int fat_write_fat_table(uint16_t *fat_table);
 int fat_rm_entry(const char *name);
 int mkfile_fat(const char *name);
 fat_directory_entry_t *fat_lookup(const char *name, char *dir_name, uint16_t *cluster);
+int fat_read_file(uint16_t *cluster, uint8_t *buffer, uint32_t size);
