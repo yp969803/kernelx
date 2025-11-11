@@ -796,7 +796,7 @@ int mkfile_fat(const char *name)
             i++;
         } else {
             dir_name[j++] = name[i++];
-            if (j > 8) {
+            if (j > 10) {
                 return ERR;
             }
         }
