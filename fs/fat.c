@@ -735,7 +735,7 @@ int mkfile_fat(const char *name)
 //  requires full path
 fat_directory_entry_t *fat_lookup(const char *name, char *dir_name, uint16_t *cluster)
 {
-    if (!name || name[0] != '/' || name[1] == '\0') {
+    if (!name || name[0] != '/' || name[1] == '\0' || !dir_name || !cluster) {
         return ERR;
     }
 
@@ -815,6 +815,57 @@ int fat_read_file(uint16_t *cluster, uint8_t *buffer, uint32_t size)
         buf_ptr += to_read;
         bytes_read += to_read;
         *cluster = fat_table[*cluster];
+    }
+
+    kfree(fat_table);
+    return OK;
+}
+
+int fat_write_file(uint16_t *cluster, const uint8_t *buffer, uint32_t size)
+{
+    if (size == 0 || !buffer || !cluster || *cluster < 2 || *cluster > LAST_CLUSTER) {
+        return ERR;
+    }
+
+    uint16_t *fat_table = get_fat_structure();
+    if (!fat_table) {
+        return ERR;
+    }
+
+    uint32_t first_data_sector = hda_boot_sector.reserved_sector_count +
+                                 hda_boot_sector.num_fats * hda_boot_sector.fat_size_16 +
+                                 CEIL_DIV(hda_boot_sector.root_entry_count * 32, SECTOR_SIZE);
+
+    uint32_t bytes_written = 0;
+    uint8_t *buf_ptr       = buffer;
+
+    while (bytes_written < size) {
+        if (*cluster == END_OF_CLUSTER_CHAIN) {
+            uint16_t new_cluster = fat_return_free_cluster(fat_table);
+            if (new_cluster == 0) {
+                kfree(fat_table);
+                return ERR;
+            }
+            fat_table[*cluster]    = new_cluster;
+            fat_table[new_cluster] = END_OF_CLUSTER_CHAIN;
+            *cluster               = new_cluster;
+        }
+        uint32_t start_sector =
+            first_data_sector + (*cluster - 2) * hda_boot_sector.sectors_per_cluster;
+        uint32_t cluster_size = hda_boot_sector.sectors_per_cluster * SECTOR_SIZE;
+        uint32_t to_write     = MIN(cluster_size, size - bytes_written);
+        if (ata_write_sectors(start_sector, hda_boot_sector.sectors_per_cluster, buf_ptr) != OK) {
+            kfree(fat_table);
+            return ERR;
+        }
+        buf_ptr += to_write;
+        bytes_written += to_write;
+        *cluster = fat_table[*cluster];
+    }
+
+    if (fat_write_fat_table(fat_table) != OK) {
+        kfree(fat_table);
+        return ERR;
     }
 
     kfree(fat_table);
