@@ -49,7 +49,7 @@ bool dot_only_in_last_entry(const char *name)
 
 void rearrange_name(char *name)
 {
-    char ext[3];
+    char ext[3] = {' ', ' ', ' '};
     for (int i = 0; i < 11; i++) {
         if (name[i] == '.') {
             int j = 0;
