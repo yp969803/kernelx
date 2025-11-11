@@ -68,3 +68,4 @@ uint16_t fat_return_last_cluster(uint16_t *fat_table, uint16_t start_cluster);
 int fat_write_fat_table(uint16_t *fat_table);
 int fat_rm_entry(const char *name);
 int mkfile_fat(const char *name);
+fat_directory_entry_t *fat_lookup(const char *name, char *dir_name, uint16_t *cluster);

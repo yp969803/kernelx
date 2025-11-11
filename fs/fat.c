@@ -146,43 +146,13 @@ int read_fat_boot_sector(void)
 
 int mkdir_fat(const char *name)
 {
-    if (!name || name[0] != '/' || name[1] == '\0') {
-        return ERR;
-    }
     char dir_name[11];
     mem_set(dir_name, ' ', 11);
-    int i            = 1;
-    int j            = 0;
+
     uint16_t cluster = ROOT_CLUSTER;
-    while (name[i] != '\0') {
-        if (name[i] == '/') {
-            fat_directory_entry_t *entry = fat_get_dir_entry(cluster, dir_name);
-            if (!entry) {
-                return ERR;
-            }
 
-            if (entry->attr != ATTR_DIRECTORY) {
-                kfree(entry);
-                return ERR;
-            }
+    fat_directory_entry_t *existing_entry = fat_lookup(name, dir_name, &cluster);
 
-            cluster = entry->first_cluster_low;
-            kfree(entry);
-
-            mem_set(dir_name, ' ', 11);
-            j = 0;
-            i++;
-        } else if (name[i] == '.') {
-            return ERR;
-        } else {
-            dir_name[j++] = name[i++];
-            if (j > 8) {
-                return ERR;
-            }
-        }
-    }
-
-    fat_directory_entry_t *existing_entry = fat_get_dir_entry(cluster, dir_name);
     if (existing_entry) {
         kfree(existing_entry);
         return ERR;
@@ -695,50 +665,12 @@ void fat_free_fat_table_clusters(uint16_t start_cluster, uint16_t *fat_table)
 
 int fat_rm_entry(const char *name)
 {
-
-    if (!name || name[0] != '/' || name[1] == '\0') {
-        return ERR;
-    }
-
-    if (!dot_only_in_last_entry(name)) {
-        return ERR;
-    }
-
     char dir_name[11];
     mem_set(dir_name, ' ', 11);
-    int i            = 1;
-    int j            = 0;
+
     uint16_t cluster = ROOT_CLUSTER;
 
-    while (name[i] != '\0') {
-        if (name[i] == '/') {
-            fat_directory_entry_t *entry = fat_get_dir_entry(cluster, dir_name);
-            if (!entry) {
-                return ERR;
-            }
-
-            if (entry->attr != ATTR_DIRECTORY) {
-                kfree(entry);
-                return ERR;
-            }
-
-            cluster = entry->first_cluster_low;
-            kfree(entry);
-
-            mem_set(dir_name, ' ', 11);
-            j = 0;
-            i++;
-        } else {
-            dir_name[j++] = name[i++];
-            if (j > 10) {
-                return ERR;
-            }
-        }
-    }
-
-    rearrange_name(dir_name);
-
-    fat_directory_entry_t *existing_entry = fat_get_dir_entry(cluster, dir_name);
+    fat_directory_entry_t *existing_entry = fat_lookup(name, dir_name, &cluster);
     if (!existing_entry) {
         return ERR;
     }
@@ -763,48 +695,12 @@ int fat_rm_entry(const char *name)
 
 int mkfile_fat(const char *name)
 {
-    if (!name || name[0] != '/' || name[1] == '\0') {
-        return ERR;
-    }
-
-    if (!dot_only_in_last_entry(name)) {
-        return ERR;
-    }
-
     char dir_name[11];
     mem_set(dir_name, ' ', 11);
-    int i            = 1;
-    int j            = 0;
+
     uint16_t cluster = ROOT_CLUSTER;
-    while (name[i] != '\0') {
-        if (name[i] == '/') {
-            fat_directory_entry_t *entry = fat_get_dir_entry(cluster, dir_name);
-            if (!entry) {
-                return ERR;
-            }
 
-            if (entry->attr != ATTR_DIRECTORY) {
-                kfree(entry);
-                return ERR;
-            }
-
-            cluster = entry->first_cluster_low;
-            kfree(entry);
-
-            mem_set(dir_name, ' ', 11);
-            j = 0;
-            i++;
-        } else {
-            dir_name[j++] = name[i++];
-            if (j > 10) {
-                return ERR;
-            }
-        }
-    }
-
-    rearrange_name(dir_name);
-
-    fat_directory_entry_t *existing_entry = fat_get_dir_entry(cluster, dir_name);
+    fat_directory_entry_t *existing_entry = fat_lookup(name, dir_name, &cluster);
     if (existing_entry) {
         kfree(existing_entry);
         return ERR;
@@ -834,4 +730,90 @@ int mkfile_fat(const char *name)
 
     kfree(fat_table);
     return OK;
+}
+
+int fat_read_file(uint16_t start_cluster, uint8_t *buffer, uint32_t size)
+{
+    if (start_cluster < 2 || start_cluster > LAST_CLUSTER || !buffer || size == 0) {
+        return ERR;
+    }
+
+    uint16_t *fat_table = get_fat_structure();
+    if (!fat_table) {
+        return ERR;
+    }
+
+    uint32_t first_data_sector = hda_boot_sector.reserved_sector_count +
+                                 hda_boot_sector.num_fats * hda_boot_sector.fat_size_16 +
+                                 CEIL_DIV(hda_boot_sector.root_entry_count * 32, SECTOR_SIZE);
+
+    uint16_t current    = start_cluster;
+    uint32_t bytes_read = 0;
+    uint8_t *buf_ptr    = buffer;
+
+    while (current >= 0x0002 && current < END_OF_CLUSTER_CHAIN && bytes_read < size) {
+        uint32_t start_sector =
+            first_data_sector + (current - 2) * hda_boot_sector.sectors_per_cluster;
+
+        uint32_t cluster_size = hda_boot_sector.sectors_per_cluster * SECTOR_SIZE;
+        uint32_t to_read      = MIN(cluster_size, size - bytes_read);
+
+        if (ata_read_sectors(start_sector, hda_boot_sector.sectors_per_cluster, buf_ptr) != OK) {
+            kfree(fat_table);
+            return ERR;
+        }
+
+        buf_ptr += to_read;
+        bytes_read += to_read;
+        current = fat_table[current];
+    }
+
+    kfree(fat_table);
+    return OK;
+}
+
+//  requires full path
+fat_directory_entry_t *fat_lookup(const char *name, char *dir_name, uint16_t *cluster)
+{
+    if (!name || name[0] != '/' || name[1] == '\0') {
+        return ERR;
+    }
+
+    if (!dot_only_in_last_entry(name)) {
+        return ERR;
+    }
+
+    int i = 1;
+    int j = 0;
+
+    while (name[i] != '\0') {
+        if (name[i] == '/') {
+            fat_directory_entry_t *entry = fat_get_dir_entry(*cluster, dir_name);
+            if (!entry) {
+                return ERR;
+            }
+
+            if (entry->attr != ATTR_DIRECTORY) {
+                kfree(entry);
+                return ERR;
+            }
+
+            *cluster = entry->first_cluster_low;
+            kfree(entry);
+
+            mem_set(dir_name, ' ', 11);
+            j = 0;
+            i++;
+        } else {
+            dir_name[j++] = name[i++];
+            if (j > 10) {
+                return ERR;
+            }
+        }
+    }
+
+    rearrange_name(dir_name);
+
+    fat_directory_entry_t *existing_entry = fat_get_dir_entry(*cluster, dir_name);
+    return existing_entry;
 }
