@@ -760,3 +760,78 @@ int fat_rm_entry(const char *name)
     kfree(fat_table);
     return OK;
 }
+
+int mkfile_fat(const char *name)
+{
+    if (!name || name[0] != '/' || name[1] == '\0') {
+        return ERR;
+    }
+
+    if (!dot_only_in_last_entry(name)) {
+        return ERR;
+    }
+
+    char dir_name[11];
+    mem_set(dir_name, ' ', 11);
+    int i            = 1;
+    int j            = 0;
+    uint16_t cluster = ROOT_CLUSTER;
+    while (name[i] != '\0') {
+        if (name[i] == '/') {
+            fat_directory_entry_t *entry = fat_get_directory_entry(cluster, dir_name);
+            if (!entry) {
+                return ERR;
+            }
+
+            if (entry->attr != ATTR_DIRECTORY) {
+                kfree(entry);
+                return ERR;
+            }
+
+            cluster = entry->first_cluster_low;
+            kfree(entry);
+
+            mem_set(dir_name, ' ', 11);
+            j = 0;
+            i++;
+        } else {
+            dir_name[j++] = name[i++];
+            if (j > 8) {
+                return ERR;
+            }
+        }
+    }
+
+    rearrange_name(dir_name);
+
+    fat_directory_entry_t *existing_entry = fat_get_directory_entry(cluster, dir_name);
+    if (existing_entry) {
+        kfree(existing_entry);
+        return ERR;
+    }
+
+    fat_directory_entry_t new_entry;
+    mem_set(&new_entry, 0, sizeof(fat_directory_entry_t));
+    new_entry.attr = ATTR_ARCHIVE;
+    mem_copy(dir_name, new_entry.name, 11);
+    new_entry.first_cluster_low = 0;
+    new_entry.file_size         = 0;
+
+    uint16_t *fat_table = get_fat_structure();
+    if (!fat_table) {
+        return ERR;
+    }
+
+    if (fat_set_dir_entry(cluster, &new_entry, fat_table) != OK) {
+        kfree(fat_table);
+        return ERR;
+    }
+
+    if (fat_write_fat_table(fat_table) != OK) {
+        kfree(fat_table);
+        return ERR;
+    }
+
+    kfree(fat_table);
+    return OK;
+}
