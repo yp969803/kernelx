@@ -52,7 +52,7 @@ int ata_read_sectors(uint32_t lba, uint8_t sector_count, uint8_t *buffer)
     uint8_t drive_head = 0xE0 | (disk.slave << 4) | ((lba >> 24) & 0x0F);
 
     ata_wait_busy(ctrl_base);
-    clear_interrupt();
+    unsigned long flags = save_irqdisable();
 
     outb(io_base + 6, drive_head);
     outb(io_base + 2, sector_count);
@@ -70,7 +70,7 @@ int ata_read_sectors(uint32_t lba, uint8_t sector_count, uint8_t *buffer)
     for (uint8_t i = 0; i < sector_count; i++) {
         if (!ata_wait_drq(io_base)) {
             ata_software_reset();
-            set_interrupt();
+            irqrestore(flags);
             return ERR;
         }
 
@@ -83,12 +83,12 @@ int ata_read_sectors(uint32_t lba, uint8_t sector_count, uint8_t *buffer)
         uint8_t status = inb(io_base + 7);
         if (status & (ATA_SR_ERR | ATA_SR_DF)) {
             ata_software_reset();
-            set_interrupt();
+            irqrestore(flags);
             return ERR;
         }
     }
 
-    set_interrupt();
+    irqrestore(flags);
     return OK;
 }
 
@@ -110,7 +110,7 @@ int ata_write_sectors(uint32_t lba, uint8_t sector_count, const uint8_t *buffer)
     uint8_t drive_head = 0xE0 | (disk.slave << 4) | ((lba >> 24) & 0x0F);
 
     ata_wait_busy(ctrl_base);
-    clear_interrupt();
+    unsigned long flags = save_irqdisable();
 
     outb(io_base + 6, drive_head);
     outb(io_base + 2, sector_count);
@@ -128,7 +128,7 @@ int ata_write_sectors(uint32_t lba, uint8_t sector_count, const uint8_t *buffer)
     for (uint8_t i = 0; i < sector_count; i++) {
         if (!ata_wait_drq(io_base)) {
             ata_software_reset();
-            set_interrupt();
+            irqrestore(flags);
             return ERR;
         }
 
@@ -142,7 +142,7 @@ int ata_write_sectors(uint32_t lba, uint8_t sector_count, const uint8_t *buffer)
         uint8_t status = inb(io_base + 7);
         if (status & (ATA_SR_ERR | ATA_SR_DF)) {
             ata_software_reset();
-            set_interrupt();
+            irqrestore(flags);
             return ERR;
         }
     }
@@ -151,7 +151,7 @@ int ata_write_sectors(uint32_t lba, uint8_t sector_count, const uint8_t *buffer)
     outb(io_base + 7, ATA_CMD_CACHE_FLUSH);
     ata_wait_busy(ctrl_base);
 
-    set_interrupt();
+    irqrestore(flags);
     return OK;
 }
 
