@@ -74,4 +74,4 @@ int mkfile_fat(const char *name);
 fat_directory_entry_t *fat_lookup(const char *name, char *dir_name, uint16_t *cluster);
 int fat_read_file(uint16_t *cluster, uint8_t *buffer, uint32_t size);
 int fat_write_file(uint16_t *cluster, const uint8_t *buffer, uint32_t size);
-int *fat_update_dir_entry(uint16_t cluster, const char name[11], fat_directory_entry_t *new_entry);
+int fat_update_dir_entry(uint16_t cluster, const char name[11], fat_directory_entry_t *new_entry);

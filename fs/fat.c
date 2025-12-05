@@ -10,7 +10,6 @@ fat_boot_sector_t hda_boot_sector;
 
 bool dot_only_in_last_entry(const char *name)
 {
-
     int i = 0;
 
     int slash_pos = -1;
@@ -476,7 +475,7 @@ int fat_set_dir_entry(uint16_t cluster, fat_directory_entry_t *entry, uint16_t *
     return OK;
 }
 
-int *fat_update_dir_entry(uint16_t cluster, const char name[11], fat_directory_entry_t *new_entry)
+int fat_update_dir_entry(uint16_t cluster, const char name[11], fat_directory_entry_t *new_entry)
 {
     if (new_entry == NULL) {
         return ERR;

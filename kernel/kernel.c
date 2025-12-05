@@ -16,7 +16,6 @@ extern uint32_t _kernel_end;
 
 void *task1(void *args)
 {
-
     kprintf("Task 1 is running\n");
     sleep(1000);
     kprintf("Task 1 woke up after sleeping for 1s\n");
@@ -30,10 +29,12 @@ void main(uint32_t magic, struct multiboot_info *mb_addr)
         kprintf("Invalid magic number from bootloader!\n");
         return;
     }
+
     if (!(mb_addr->flags & (1 << 6))) {
         kprintf("Memory Info not provided by bootloader!\n");
         return;
     }
+
     initGdt();
 
     enable_cursor(14, 15);
