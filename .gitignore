@@ -6,3 +6,4 @@
 iso/boot/** */
 bx_enh_dbg.ini
 **/*.img
+.claude
