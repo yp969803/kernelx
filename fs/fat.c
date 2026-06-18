@@ -954,12 +954,16 @@ fat_directory_entry_t *fat_lookup(const char *name, char *dir_name, uint16_t *cl
 
 int fat_read_file(uint16_t *cluster, uint8_t *buffer, uint32_t size)
 {
-    if (*cluster < 2 || *cluster > LAST_CLUSTER || !buffer || size == 0) {
+    if (!cluster || !buffer || size == 0) {
         return ERR;
     }
 
-    if (*cluster == END_OF_CLUSTER_CHAIN) {
+    if (*cluster == 0 || *cluster >= END_OF_CLUSTER_CHAIN) {
         return OK;
+    }
+
+    if (*cluster < 2 || *cluster > LAST_CLUSTER) {
+        return ERR;
     }
 
     uint16_t *fat_table = get_fat_structure();
@@ -973,22 +977,39 @@ int fat_read_file(uint16_t *cluster, uint8_t *buffer, uint32_t size)
 
     uint32_t bytes_read = 0;
     uint8_t *buf_ptr    = buffer;
+    uint16_t current    = *cluster;
 
-    while (*cluster >= 0x0002 && *cluster < END_OF_CLUSTER_CHAIN && bytes_read < size) {
+    while (current >= 0x0002 && current < END_OF_CLUSTER_CHAIN && bytes_read < size) {
         uint32_t start_sector =
-            first_data_sector + (*cluster - 2) * hda_boot_sector.sectors_per_cluster;
+            first_data_sector + (current - 2) * hda_boot_sector.sectors_per_cluster;
 
         uint32_t cluster_size = hda_boot_sector.sectors_per_cluster * SECTOR_SIZE;
         uint32_t to_read      = MIN(cluster_size, size - bytes_read);
 
-        if (ata_read_sectors(start_sector, hda_boot_sector.sectors_per_cluster, buf_ptr) != OK) {
-            kfree(fat_table);
-            return ERR;
+        if (to_read == cluster_size) {
+            if (ata_read_sectors(start_sector, hda_boot_sector.sectors_per_cluster, buf_ptr) != OK) {
+                kfree(fat_table);
+                return ERR;
+            }
+        } else {
+            uint8_t *cluster_buffer = kmalloc(cluster_size);
+            if (!cluster_buffer) {
+                kfree(fat_table);
+                return ERR;
+            }
+            if (ata_read_sectors(start_sector, hda_boot_sector.sectors_per_cluster,
+                                 cluster_buffer) != OK) {
+                kfree(cluster_buffer);
+                kfree(fat_table);
+                return ERR;
+            }
+            mem_copy(cluster_buffer, buf_ptr, to_read);
+            kfree(cluster_buffer);
         }
 
         buf_ptr += to_read;
         bytes_read += to_read;
-        *cluster = fat_table[*cluster];
+        current = fat_table[current];
     }
 
     kfree(fat_table);
@@ -997,7 +1018,11 @@ int fat_read_file(uint16_t *cluster, uint8_t *buffer, uint32_t size)
 
 int fat_write_file(uint16_t *cluster, const uint8_t *buffer, uint32_t size)
 {
-    if (size == 0 || !buffer || !cluster || *cluster < 2 || *cluster > LAST_CLUSTER) {
+    if (size == 0 || !buffer || !cluster) {
+        return ERR;
+    }
+
+    if (*cluster != 0 && (*cluster < 2 || *cluster > LAST_CLUSTER)) {
         return ERR;
     }
 
@@ -1012,29 +1037,78 @@ int fat_write_file(uint16_t *cluster, const uint8_t *buffer, uint32_t size)
 
     uint32_t bytes_written = 0;
     const uint8_t *buf_ptr = buffer;
+    uint32_t cluster_size  = hda_boot_sector.sectors_per_cluster * SECTOR_SIZE;
+    uint16_t current       = *cluster;
+    uint16_t previous      = 0;
+    bool current_is_new    = false;
 
-    while (bytes_written < size) {
-        if (*cluster == END_OF_CLUSTER_CHAIN) {
-            uint16_t new_cluster = fat_return_free_cluster(fat_table);
-            if (new_cluster == 0) {
-                kfree(fat_table);
-                return ERR;
-            }
-            fat_table[*cluster]    = new_cluster;
-            fat_table[new_cluster] = END_OF_CLUSTER_CHAIN;
-            *cluster               = new_cluster;
-        }
-        uint32_t start_sector =
-            first_data_sector + (*cluster - 2) * hda_boot_sector.sectors_per_cluster;
-        uint32_t cluster_size = hda_boot_sector.sectors_per_cluster * SECTOR_SIZE;
-        uint32_t to_write     = MIN(cluster_size, size - bytes_written);
-        if (ata_write_sectors(start_sector, hda_boot_sector.sectors_per_cluster, buf_ptr) != OK) {
+    if (current == 0) {
+        current = fat_return_free_cluster(fat_table);
+        if (current == 0) {
             kfree(fat_table);
             return ERR;
         }
+        fat_table[current] = END_OF_CLUSTER_CHAIN;
+        *cluster           = current;
+        current_is_new     = true;
+    }
+
+    while (bytes_written < size) {
+        uint32_t start_sector =
+            first_data_sector + (current - 2) * hda_boot_sector.sectors_per_cluster;
+        uint32_t to_write     = MIN(cluster_size, size - bytes_written);
+
+        if (to_write == cluster_size) {
+            if (ata_write_sectors(start_sector, hda_boot_sector.sectors_per_cluster, buf_ptr) !=
+                OK) {
+                kfree(fat_table);
+                return ERR;
+            }
+        } else {
+            uint8_t *cluster_buffer = kmalloc(cluster_size);
+            if (!cluster_buffer) {
+                kfree(fat_table);
+                return ERR;
+            }
+
+            if (current_is_new) {
+                mem_set(cluster_buffer, 0, cluster_size);
+            } else if (ata_read_sectors(start_sector, hda_boot_sector.sectors_per_cluster,
+                                        cluster_buffer) != OK) {
+                kfree(cluster_buffer);
+                kfree(fat_table);
+                return ERR;
+            }
+
+            mem_copy((void *)buf_ptr, cluster_buffer, to_write);
+            if (ata_write_sectors(start_sector, hda_boot_sector.sectors_per_cluster,
+                                  cluster_buffer) != OK) {
+                kfree(cluster_buffer);
+                kfree(fat_table);
+                return ERR;
+            }
+            kfree(cluster_buffer);
+        }
+
         buf_ptr += to_write;
         bytes_written += to_write;
-        *cluster = fat_table[*cluster];
+
+        if (bytes_written < size) {
+            previous = current;
+            current  = fat_table[current];
+            if (current >= END_OF_CLUSTER_CHAIN) {
+                current = fat_return_free_cluster(fat_table);
+                if (current == 0) {
+                    kfree(fat_table);
+                    return ERR;
+                }
+                fat_table[previous] = current;
+                fat_table[current]  = END_OF_CLUSTER_CHAIN;
+                current_is_new      = true;
+            } else {
+                current_is_new = false;
+            }
+        }
     }
 
     if (fat_write_fat_table(fat_table) != OK) {

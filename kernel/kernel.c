@@ -35,6 +35,79 @@ void *task2(void *args)
     return NULL;
 }
 
+static bool buffer_equals(const uint8_t *a, const uint8_t *b, uint32_t size)
+{
+    for (uint32_t i = 0; i < size; i++) {
+        if (a[i] != b[i]) {
+            return false;
+        }
+    }
+    return true;
+}
+
+static void filesystem_smoke_test(void)
+{
+    const char path[] = "/fstest.txt";
+    const uint8_t data[] = "kernelx-fat-smoke";
+    const uint32_t data_size = sizeof(data) - 1;
+    uint8_t read_buffer[sizeof(data)];
+
+    kprintf("FAT smoke: ");
+
+    fat_rm_entry(path);
+
+    if (mkfile_fat(path) != OK) {
+        kprintf("FAIL mkfile\n");
+        return;
+    }
+
+    char dir_name[11];
+    mem_set(dir_name, ' ', 11);
+    uint16_t parent_cluster = ROOT_CLUSTER;
+    fat_directory_entry_t *entry = fat_lookup(path, dir_name, &parent_cluster);
+    if (!entry) {
+        kprintf("FAIL lookup\n");
+        return;
+    }
+
+    uint16_t file_cluster = entry->first_cluster_low;
+    if (fat_write_file(&file_cluster, data, data_size) != OK) {
+        kfree(entry);
+        kprintf("FAIL write\n");
+        return;
+    }
+
+    entry->first_cluster_low = file_cluster;
+    entry->file_size         = data_size;
+    if (fat_update_dir_entry(parent_cluster, dir_name, entry) != OK) {
+        kfree(entry);
+        kprintf("FAIL update\n");
+        return;
+    }
+
+    mem_set(read_buffer, 0, sizeof(read_buffer));
+    uint16_t read_cluster = entry->first_cluster_low;
+    if (fat_read_file(&read_cluster, read_buffer, data_size) != OK) {
+        kfree(entry);
+        kprintf("FAIL read\n");
+        return;
+    }
+
+    kfree(entry);
+
+    if (!buffer_equals(data, read_buffer, data_size)) {
+        kprintf("FAIL compare\n");
+        return;
+    }
+
+    if (fat_rm_entry(path) != OK) {
+        kprintf("FAIL cleanup\n");
+        return;
+    }
+
+    kprintf("PASS\n");
+}
+
 void main(uint32_t magic, struct multiboot_info *mb_addr)
 {
     if (magic != MULTIBOOT_BOOTLOADER_MAGIC) {
@@ -61,6 +134,7 @@ void main(uint32_t magic, struct multiboot_info *mb_addr)
     init_memory(mb_addr->mem_upper * 1024, physicalAllocStart);
     kmallocInit(0x1000);
     init_disk();
+    filesystem_smoke_test();
     initialize_multitasking();
     initialize_timer();
     create_kernel_task(task1, NULL);
