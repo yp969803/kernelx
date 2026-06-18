@@ -203,5 +203,11 @@ void init_disk(void)
     disk.slave           = 0; // Master
     disk.partition_start = 1;
     ata_software_reset();
-    mkfs_fat();
+
+    if (read_fat_boot_sector() != OK || !fat_boot_sector_valid()) {
+        if (mkfs_fat() != OK) {
+            return;
+        }
+        read_fat_boot_sector();
+    }
 }

@@ -132,15 +132,53 @@ int mkfs_fat(void)
         if (ata_write_sectors(
                 hda_boot_sector.reserved_sector_count + i * hda_boot_sector.fat_size_16,
                 (uint8_t)hda_boot_sector.fat_size_16, (const uint8_t *)fat_kmalloc) != OK) {
+            kfree(fat_kmalloc);
             return ERR;
         }
     }
+    kfree(fat_kmalloc);
+
+    root_dir_sectors = CEIL_DIV(hda_boot_sector.root_entry_count * 32, SECTOR_SIZE);
+    uint32_t root_dir_start_sector = hda_boot_sector.reserved_sector_count +
+                                     hda_boot_sector.num_fats * hda_boot_sector.fat_size_16;
+    uint8_t *root_dir = kmalloc(root_dir_sectors * SECTOR_SIZE);
+    if (!root_dir) {
+        return ERR;
+    }
+
+    mem_set(root_dir, 0, root_dir_sectors * SECTOR_SIZE);
+    if (ata_write_sectors(root_dir_start_sector, (uint8_t)root_dir_sectors, root_dir) != OK) {
+        kfree(root_dir);
+        return ERR;
+    }
+
+    kfree(root_dir);
     return OK;
 }
 
 int read_fat_boot_sector(void)
 {
     return ata_read_sectors(0, 1, (uint8_t *)&hda_boot_sector);
+}
+
+int fat_boot_sector_valid(void)
+{
+    if (hda_boot_sector.bytes_per_sector != SECTOR_SIZE) {
+        return false;
+    }
+    if (hda_boot_sector.reserved_sector_count == 0 || hda_boot_sector.num_fats != FAT_COPIES) {
+        return false;
+    }
+    if (hda_boot_sector.root_entry_count == 0 || hda_boot_sector.fat_size_16 == 0) {
+        return false;
+    }
+    if (hda_boot_sector.sectors_per_cluster == 0) {
+        return false;
+    }
+    if (hda_boot_sector.total_sectors_16 == 0 && hda_boot_sector.total_sectors_32 == 0) {
+        return false;
+    }
+    return true;
 }
 
 int mkdir_fat(const char *name)
@@ -179,12 +217,22 @@ int mkdir_fat(const char *name)
                                   (new_cluster - 2) * hda_boot_sector.sectors_per_cluster;
 
     fat_directory_entry_t *dir_entries = kmalloc(hda_boot_sector.sectors_per_cluster * SECTOR_SIZE);
+    if (!dir_entries) {
+        kfree(fat_table);
+        return ERR;
+    }
     mem_set(dir_entries, 0, hda_boot_sector.sectors_per_cluster * SECTOR_SIZE);
 
-    uint32_t *dir_entries_u32 = (uint32_t *)dir_entries;
+    mem_set(dir_entries[0].name, ' ', 11);
+    dir_entries[0].name[0]             = '.';
+    dir_entries[0].attr                = ATTR_DIRECTORY;
+    dir_entries[0].first_cluster_low   = new_cluster;
 
-    dir_entries_u32[0] = new_cluster; // "." entry
-    dir_entries_u32[1] = cluster;     // ".." entry
+    mem_set(dir_entries[1].name, ' ', 11);
+    dir_entries[1].name[0]             = '.';
+    dir_entries[1].name[1]             = '.';
+    dir_entries[1].attr                = ATTR_DIRECTORY;
+    dir_entries[1].first_cluster_low   = cluster;
 
     if (ata_write_sectors(new_cluster_sector, hda_boot_sector.sectors_per_cluster,
                           (const uint8_t *)dir_entries) != OK) {
@@ -529,7 +577,7 @@ int fat_update_dir_entry(uint16_t cluster, const char name[11], fat_directory_en
 
     uint16_t *fat_table = get_fat_structure();
     if (!fat_table) {
-        return NULL;
+        return ERR;
     }
 
     uint32_t first_data_sector = hda_boot_sector.reserved_sector_count +
@@ -862,11 +910,11 @@ int mkfile_fat(const char *name)
 fat_directory_entry_t *fat_lookup(const char *name, char *dir_name, uint16_t *cluster)
 {
     if (!name || name[0] != '/' || name[1] == '\0' || !dir_name || !cluster) {
-        return ERR;
+        return NULL;
     }
 
     if (!dot_only_in_last_entry(name)) {
-        return ERR;
+        return NULL;
     }
 
     int i = 1;
@@ -876,12 +924,12 @@ fat_directory_entry_t *fat_lookup(const char *name, char *dir_name, uint16_t *cl
         if (name[i] == '/') {
             fat_directory_entry_t *entry = fat_get_dir_entry(*cluster, dir_name);
             if (!entry) {
-                return ERR;
+                return NULL;
             }
 
             if (entry->attr != ATTR_DIRECTORY) {
                 kfree(entry);
-                return ERR;
+                return NULL;
             }
 
             *cluster = entry->first_cluster_low;
@@ -893,7 +941,7 @@ fat_directory_entry_t *fat_lookup(const char *name, char *dir_name, uint16_t *cl
         } else {
             dir_name[j++] = name[i++];
             if (j > 10) {
-                return ERR;
+                return NULL;
             }
         }
     }
@@ -963,7 +1011,7 @@ int fat_write_file(uint16_t *cluster, const uint8_t *buffer, uint32_t size)
                                  CEIL_DIV(hda_boot_sector.root_entry_count * 32, SECTOR_SIZE);
 
     uint32_t bytes_written = 0;
-    uint8_t *buf_ptr       = buffer;
+    const uint8_t *buf_ptr = buffer;
 
     while (bytes_written < size) {
         if (*cluster == END_OF_CLUSTER_CHAIN) {

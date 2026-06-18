@@ -1,4 +1,5 @@
 #include "syscall.h"
+#include "../kernel/utils.h"
 #include "../stdlib/stdio.h"
 
 int sys_write(uint32_t buf, uint32_t unused1, uint32_t unused2, uint32_t unused3, uint32_t unused4,
@@ -6,13 +7,17 @@ int sys_write(uint32_t buf, uint32_t unused1, uint32_t unused2, uint32_t unused3
 {
 
     const char *buffer = (const char *)buf;
+    if (!buffer) {
+        return ERR;
+    }
 
     int i = 0;
     while (buffer[i] != '\0') {
         kprintf("%c", buffer[i]);
+        i++;
     }
 
-    return 1;
+    return i;
 }
 
 syscall_t syscall_table[] = {
