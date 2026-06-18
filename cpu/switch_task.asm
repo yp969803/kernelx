@@ -1,6 +1,7 @@
 
 [bits 32]
 global switch_to_task
+global push_interrupt_frame
 extern current_task_TCB
 extern next_task_TCB
 extern tss_entry
@@ -11,6 +12,13 @@ extern tss_entry
 %define TCB_CR3      8
 
 section .text
+
+push_interrupt_frame:
+    pop eax
+    pushfd
+    push cs
+    push eax
+    ret
 
 switch_to_task:
     cli

@@ -6,6 +6,7 @@
 #include <stddef.h>
 
 extern void switch_to_task();
+extern void push_interrupt_frame();
 
 static spinlock task_lock;
 
@@ -27,16 +28,6 @@ static inline uint32_t *get_cr3()
     uint32_t cr3;
     asm volatile("mov %%cr3, %0" : "=r"(cr3));
     return (uint32_t *)cr3;
-}
-
-static inline void push_interrupt_frame(void)
-{
-    asm volatile("pushfl\n\t" // push EFLAGS
-                 "mov %%cs, %%ax\n\t"
-                 "push %%eax\n\t" // push CS
-                 :
-                 :
-                 : "ax", "memory");
 }
 
 void initialize_multitasking(void)

@@ -23,6 +23,18 @@ void *task1(void *args)
     return NULL;
 }
 
+void *task2(void *args)
+{
+    for (int i = 1; i <= 3; i++) {
+        kprintf("Task 2 iteration %d\n", i);
+        sleep(500);
+    }
+
+    kprintf("Task 2 finished\n");
+    exit();
+    return NULL;
+}
+
 void main(uint32_t magic, struct multiboot_info *mb_addr)
 {
     if (magic != MULTIBOOT_BOOTLOADER_MAGIC) {
@@ -52,6 +64,7 @@ void main(uint32_t magic, struct multiboot_info *mb_addr)
     initialize_multitasking();
     initialize_timer();
     create_kernel_task(task1, NULL);
+    create_kernel_task(task2, NULL);
 
     while (1) {
         halt();
