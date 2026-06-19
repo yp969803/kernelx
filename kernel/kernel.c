@@ -45,20 +45,12 @@ static bool buffer_equals(const uint8_t *a, const uint8_t *b, uint32_t size)
     return true;
 }
 
-static void filesystem_smoke_test(void)
+static int fat_write_read_verify(const char *path, const uint8_t *data, uint32_t data_size)
 {
-    const char path[] = "/fstest.txt";
-    const uint8_t data[] = "kernelx-fat-smoke";
-    const uint32_t data_size = sizeof(data) - 1;
-    uint8_t read_buffer[sizeof(data)];
-
-    kprintf("FAT smoke: ");
-
     fat_rm_entry(path);
 
     if (mkfile_fat(path) != OK) {
-        kprintf("FAIL mkfile\n");
-        return;
+        return ERR;
     }
 
     char dir_name[11];
@@ -66,41 +58,94 @@ static void filesystem_smoke_test(void)
     uint16_t parent_cluster = ROOT_CLUSTER;
     fat_directory_entry_t *entry = fat_lookup(path, dir_name, &parent_cluster);
     if (!entry) {
-        kprintf("FAIL lookup\n");
-        return;
+        return ERR;
     }
 
     uint16_t file_cluster = entry->first_cluster_low;
     if (fat_write_file(&file_cluster, data, data_size) != OK) {
         kfree(entry);
-        kprintf("FAIL write\n");
-        return;
+        return ERR;
     }
 
     entry->first_cluster_low = file_cluster;
     entry->file_size         = data_size;
     if (fat_update_dir_entry(parent_cluster, dir_name, entry) != OK) {
         kfree(entry);
-        kprintf("FAIL update\n");
-        return;
+        return ERR;
     }
 
-    mem_set(read_buffer, 0, sizeof(read_buffer));
+    uint8_t *read_buffer = kmalloc(data_size);
+    if (!read_buffer) {
+        kfree(entry);
+        return ERR;
+    }
+
+    mem_set(read_buffer, 0, data_size);
     uint16_t read_cluster = entry->first_cluster_low;
     if (fat_read_file(&read_cluster, read_buffer, data_size) != OK) {
+        kfree(read_buffer);
         kfree(entry);
-        kprintf("FAIL read\n");
-        return;
+        return ERR;
     }
 
     kfree(entry);
 
     if (!buffer_equals(data, read_buffer, data_size)) {
-        kprintf("FAIL compare\n");
+        kfree(read_buffer);
+        return ERR;
+    }
+    kfree(read_buffer);
+
+    if (fat_rm_entry(path) != OK) {
+        return ERR;
+    }
+
+    return OK;
+}
+
+static void fill_pattern(uint8_t *buffer, uint32_t size)
+{
+    for (uint32_t i = 0; i < size; i++) {
+        buffer[i] = (uint8_t)((i * 31 + 7) & 0xFF);
+    }
+}
+
+static void filesystem_smoke_test(void)
+{
+    const uint8_t small_data[] = "kernelx-fat-smoke";
+
+    kprintf("FAT root file: ");
+    if (fat_write_read_verify("/fstest.txt", small_data, sizeof(small_data) - 1) != OK) {
+        kprintf("FAIL\n");
+        return;
+    }
+    kprintf("PASS\n");
+
+    kprintf("FAT nested big file: ");
+    fat_rm_entry("/fsdir/big.bin");
+    fat_rm_entry("/fsdir");
+
+    if (mkdir_fat("/fsdir") != OK) {
+        kprintf("FAIL mkdir\n");
         return;
     }
 
-    if (fat_rm_entry(path) != OK) {
+    const uint32_t big_size = 9000;
+    uint8_t *big_data       = kmalloc(big_size);
+    if (!big_data) {
+        kprintf("FAIL alloc\n");
+        return;
+    }
+
+    fill_pattern(big_data, big_size);
+    if (fat_write_read_verify("/fsdir/big.bin", big_data, big_size) != OK) {
+        kfree(big_data);
+        kprintf("FAIL file\n");
+        return;
+    }
+    kfree(big_data);
+
+    if (fat_rm_entry("/fsdir") != OK) {
         kprintf("FAIL cleanup\n");
         return;
     }

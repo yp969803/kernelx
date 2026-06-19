@@ -456,7 +456,6 @@ int fat_set_dir_entry(uint16_t cluster, fat_directory_entry_t *entry, uint16_t *
         if (ata_read_sectors(start_sector, hda_boot_sector.sectors_per_cluster,
                              (uint8_t *)dir_entries) != OK) {
             kfree(dir_entries);
-            kfree(fat_table);
             return ERR;
         }
 
@@ -484,10 +483,8 @@ int fat_set_dir_entry(uint16_t cluster, fat_directory_entry_t *entry, uint16_t *
             if (ata_write_sectors(start_sector, hda_boot_sector.sectors_per_cluster,
                                   (const uint8_t *)dir_entries) != OK) {
                 kfree(dir_entries);
-                kfree(fat_table);
                 return ERR;
             }
-            kfree(fat_table);
             kfree(dir_entries);
             return OK;
         }
@@ -498,6 +495,7 @@ int fat_set_dir_entry(uint16_t cluster, fat_directory_entry_t *entry, uint16_t *
     uint16_t last_cluster = fat_return_last_cluster(fat_table, cluster);
 
     if (new_cluster == 0 || last_cluster == 0) {
+        kfree(dir_entries);
         return ERR;
     }
 
@@ -514,12 +512,10 @@ int fat_set_dir_entry(uint16_t cluster, fat_directory_entry_t *entry, uint16_t *
     if (ata_write_sectors(start_sector, hda_boot_sector.sectors_per_cluster,
                           (const uint8_t *)dir_entries) != OK) {
         kfree(dir_entries);
-        kfree(fat_table);
         return ERR;
     }
 
     kfree(dir_entries);
-    kfree(fat_table);
     return OK;
 }
 
