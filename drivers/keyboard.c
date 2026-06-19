@@ -1,4 +1,6 @@
 #include "../cpu/io.h"
+#include "../kernel/utils.h"
+#include "keyboard.h"
 #include "vga.h"
 #include <stdbool.h>
 #include <stdint.h>
@@ -30,6 +32,97 @@ static const char shift_keymap[60] = {0,   27,  '!',  '@',  '#',  '$', '%', '^',
                                       'B', 'N', 'M',  '<',  '>',  '?', 0,   '*', 0,   ' ', 0};
 
 static bool shift_pressed = false;
+static char key_buffer[KEYBOARD_BUFFER_SIZE];
+static uint32_t key_head = 0;
+static uint32_t key_tail = 0;
+
+static bool keybuf_empty(void)
+{
+    return key_head == key_tail;
+}
+
+static bool keybuf_full(void)
+{
+    return ((key_head + 1) % KEYBOARD_BUFFER_SIZE) == key_tail;
+}
+
+static void keybuf_push(char ch)
+{
+    if (keybuf_full()) {
+        return;
+    }
+
+    key_buffer[key_head] = ch;
+    key_head             = (key_head + 1) % KEYBOARD_BUFFER_SIZE;
+}
+
+static int keybuf_pop(void)
+{
+    if (keybuf_empty()) {
+        return ERR;
+    }
+
+    char ch  = key_buffer[key_tail];
+    key_tail = (key_tail + 1) % KEYBOARD_BUFFER_SIZE;
+    return ch;
+}
+
+void keyboard_init(void)
+{
+    unsigned long flags = save_irqdisable();
+    key_head            = 0;
+    key_tail            = 0;
+    shift_pressed       = false;
+    irqrestore(flags);
+}
+
+int keyboard_getchar(void)
+{
+    while (1) {
+        unsigned long flags = save_irqdisable();
+        int ch              = keybuf_pop();
+        irqrestore(flags);
+
+        if (ch >= 0) {
+            return ch;
+        }
+
+        halt();
+    }
+}
+
+int keyboard_read_line(char *buffer, uint32_t max)
+{
+    if (!buffer || max == 0) {
+        return ERR;
+    }
+
+    uint32_t len = 0;
+
+    while (1) {
+        char ch = (char)keyboard_getchar();
+
+        if (ch == '\n') {
+            buffer[len] = '\0';
+            vga_put_char('\n');
+            return (int)len;
+        }
+
+        if (ch == '\b') {
+            if (len > 0) {
+                len--;
+                buffer[len] = '\0';
+                vga_remove_char();
+            }
+            continue;
+        }
+
+        if (len < max - 1) {
+            buffer[len++] = ch;
+            vga_put_char((uint8_t)ch);
+        }
+    }
+}
 
 void keyboard_handler_c(void)
 {
@@ -49,10 +142,6 @@ void keyboard_handler_c(void)
         return;
     }
 
-    if (scancode == BACKSPACE) {
-        vga_remove_char();
-        return;
-    }
     char ch = shift_pressed ? shift_keymap[scancode] : keymap[scancode];
-    vga_put_char(ch);
+    keybuf_push(ch);
 }

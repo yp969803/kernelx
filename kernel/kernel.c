@@ -2,11 +2,13 @@
 #include "../cpu/gdt.h"
 #include "../cpu/idt.h"
 #include "../drivers/ata.h"
+#include "../drivers/keyboard.h"
 #include "../drivers/timer.h"
 #include "../fs/fat.h"
 #include "../stdlib/stdio.h"
 #include "kmalloc.h"
 #include "mem.h"
+#include "shell.h"
 #include "task.h"
 #include "utils.h"
 
@@ -170,6 +172,7 @@ void main(uint32_t magic, struct multiboot_info *mb_addr)
     enable_cursor(14, 15);
     clear_screen();
 
+    keyboard_init();
     idt_init();
 
     // uint32_t mod1 = *(uint32_t*)(mb_addr->mods_addr+4);
@@ -184,6 +187,7 @@ void main(uint32_t magic, struct multiboot_info *mb_addr)
     initialize_timer();
     create_kernel_task(task1, NULL);
     create_kernel_task(task2, NULL);
+    create_kernel_task(shell_task, NULL);
 
     while (1) {
         halt();
