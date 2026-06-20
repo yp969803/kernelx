@@ -31,6 +31,7 @@ static void cmd_touch(shell_line *line);
 static void cmd_rm(shell_line *line);
 static void cmd_write(shell_line *line);
 static void cmd_cat(shell_line *line);
+static void cmd_ls(shell_line *line);
 
 static shell_command commands[] = {
     {"help", "help", cmd_help},
@@ -40,6 +41,7 @@ static shell_command commands[] = {
     {"rm", "rm <path>", cmd_rm},
     {"write", "write <path> <text>", cmd_write},
     {"cat", "cat <path>", cmd_cat},
+    {"ls", "ls <path>", cmd_ls},
 };
 
 #define COMMAND_COUNT (sizeof(commands) / sizeof(commands[0]))
@@ -183,6 +185,37 @@ static int shell_cat_file(const char *path)
     return OK;
 }
 
+static void format_fat_name(const fat_directory_entry_t *entry, char *buffer, uint32_t max)
+{
+    uint32_t pos = 0;
+    uint32_t name_end = 8;
+    uint32_t ext_end  = 11;
+
+    while (name_end > 0 && entry->name[name_end - 1] == ' ') {
+        name_end--;
+    }
+    while (ext_end > 8 && entry->name[ext_end - 1] == ' ') {
+        ext_end--;
+    }
+
+    for (uint32_t i = 0; i < name_end && pos < max - 1; i++) {
+        buffer[pos++] = entry->name[i];
+    }
+
+    if (ext_end > 8 && pos < max - 1) {
+        buffer[pos++] = '.';
+        for (uint32_t i = 8; i < ext_end && pos < max - 1; i++) {
+            buffer[pos++] = entry->name[i];
+        }
+    }
+
+    if (entry->attr == ATTR_DIRECTORY && pos < max - 1) {
+        buffer[pos++] = '/';
+    }
+
+    buffer[pos] = '\0';
+}
+
 static void cmd_help(shell_line *line)
 {
     (void)line;
@@ -277,6 +310,29 @@ static void cmd_cat(shell_line *line)
 
     if (shell_cat_file(line->arg1) != OK) {
         kprintf("cat: %s: failed\n", line->arg1);
+    }
+}
+
+static void cmd_ls(shell_line *line)
+{
+    const char *path = line->arg1 ? line->arg1 : "/";
+    if (!path_valid(path) && !(path[0] == '/' && path[1] == '\0')) {
+        kprintf("ls: missing operand\n");
+        return;
+    }
+
+    fat_directory_entry_t entries[64];
+    uint32_t count = 0;
+
+    if (fat_list_dir(path, entries, 64, &count) != OK) {
+        kprintf("ls: %s: failed\n", path);
+        return;
+    }
+
+    for (uint32_t i = 0; i < count; i++) {
+        char name[16];
+        format_fat_name(&entries[i], name, sizeof(name));
+        kprintf("%s\n", name);
     }
 }
 
