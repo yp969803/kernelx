@@ -32,6 +32,7 @@ static void cmd_rm(shell_line *line);
 static void cmd_write(shell_line *line);
 static void cmd_cat(shell_line *line);
 static void cmd_ls(shell_line *line);
+static void cmd_fstest(shell_line *line);
 
 static shell_command commands[] = {
     {"help", "help", cmd_help},
@@ -42,6 +43,7 @@ static shell_command commands[] = {
     {"write", "write <path> <text>", cmd_write},
     {"cat", "cat <path>", cmd_cat},
     {"ls", "ls <path>", cmd_ls},
+    {"fstest", "fstest", cmd_fstest},
 };
 
 #define COMMAND_COUNT (sizeof(commands) / sizeof(commands[0]))
@@ -183,6 +185,65 @@ static int shell_cat_file(const char *path)
     kfree(buffer);
     kfree(entry);
     return OK;
+}
+
+static bool buffer_equals(const uint8_t *a, const uint8_t *b, uint32_t size)
+{
+    for (uint32_t i = 0; i < size; i++) {
+        if (a[i] != b[i]) {
+            return false;
+        }
+    }
+    return true;
+}
+
+static int fat_write_read_verify(const char *path, const uint8_t *data, uint32_t data_size)
+{
+    if (shell_write_file(path, data, data_size) != OK) {
+        return ERR;
+    }
+
+    char dir_name[11];
+    uint16_t parent_cluster;
+    fat_directory_entry_t *entry = lookup_entry(path, dir_name, &parent_cluster);
+    if (!entry) {
+        return ERR;
+    }
+
+    uint8_t *read_buffer = kmalloc(data_size);
+    if (!read_buffer) {
+        kfree(entry);
+        return ERR;
+    }
+
+    mem_set(read_buffer, 0, data_size);
+    uint16_t read_cluster = entry->first_cluster_low;
+    if (fat_read_file(&read_cluster, read_buffer, data_size) != OK) {
+        kfree(read_buffer);
+        kfree(entry);
+        return ERR;
+    }
+
+    kfree(entry);
+
+    if (!buffer_equals(data, read_buffer, data_size)) {
+        kfree(read_buffer);
+        return ERR;
+    }
+    kfree(read_buffer);
+
+    if (fat_rm_entry(path) != OK) {
+        return ERR;
+    }
+
+    return OK;
+}
+
+static void fill_pattern(uint8_t *buffer, uint32_t size)
+{
+    for (uint32_t i = 0; i < size; i++) {
+        buffer[i] = (uint8_t)((i * 31 + 7) & 0xFF);
+    }
 }
 
 static void format_fat_name(const fat_directory_entry_t *entry, char *buffer, uint32_t max)
@@ -334,6 +395,51 @@ static void cmd_ls(shell_line *line)
         format_fat_name(&entries[i], name, sizeof(name));
         kprintf("%s\n", name);
     }
+}
+
+static void cmd_fstest(shell_line *line)
+{
+    (void)line;
+
+    const uint8_t small_data[] = "kernelx-fat-smoke";
+
+    kprintf("FAT root file: ");
+    if (fat_write_read_verify("/fstest.txt", small_data, sizeof(small_data) - 1) != OK) {
+        kprintf("FAIL\n");
+        return;
+    }
+    kprintf("PASS\n");
+
+    kprintf("FAT nested big file: ");
+    fat_rm_entry("/fsdir/big.bin");
+    fat_rm_entry("/fsdir");
+
+    if (mkdir_fat("/fsdir") != OK) {
+        kprintf("FAIL mkdir\n");
+        return;
+    }
+
+    const uint32_t big_size = 9000;
+    uint8_t *big_data       = kmalloc(big_size);
+    if (!big_data) {
+        kprintf("FAIL alloc\n");
+        return;
+    }
+
+    fill_pattern(big_data, big_size);
+    if (fat_write_read_verify("/fsdir/big.bin", big_data, big_size) != OK) {
+        kfree(big_data);
+        kprintf("FAIL file\n");
+        return;
+    }
+    kfree(big_data);
+
+    if (fat_rm_entry("/fsdir") != OK) {
+        kprintf("FAIL cleanup\n");
+        return;
+    }
+
+    kprintf("PASS\n");
 }
 
 static void shell_execute(char *line)
