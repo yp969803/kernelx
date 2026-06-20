@@ -402,19 +402,22 @@ static void cmd_fstest(shell_line *line)
     (void)line;
 
     const uint8_t small_data[] = "kernelx-fat-smoke";
+    const char root_test_file[] = "/kxtest.txt";
+    const char nested_test_dir[] = "/kxtest";
+    const char nested_test_file[] = "/kxtest/big.bin";
 
     kprintf("FAT root file: ");
-    if (fat_write_read_verify("/fstest.txt", small_data, sizeof(small_data) - 1) != OK) {
-        kprintf("FAIL\n");
+    if (fat_write_read_verify(root_test_file, small_data, sizeof(small_data) - 1) != OK) {
+        kprintf("FAIL rw\n");
         return;
     }
     kprintf("PASS\n");
 
     kprintf("FAT nested big file: ");
-    fat_rm_entry("/fsdir/big.bin");
-    fat_rm_entry("/fsdir");
+    fat_rm_entry(nested_test_file);
+    fat_rm_entry(nested_test_dir);
 
-    if (mkdir_fat("/fsdir") != OK) {
+    if (mkdir_fat(nested_test_dir) != OK) {
         kprintf("FAIL mkdir\n");
         return;
     }
@@ -427,14 +430,14 @@ static void cmd_fstest(shell_line *line)
     }
 
     fill_pattern(big_data, big_size);
-    if (fat_write_read_verify("/fsdir/big.bin", big_data, big_size) != OK) {
+    if (fat_write_read_verify(nested_test_file, big_data, big_size) != OK) {
         kfree(big_data);
-        kprintf("FAIL file\n");
+        kprintf("FAIL rw\n");
         return;
     }
     kfree(big_data);
 
-    if (fat_rm_entry("/fsdir") != OK) {
+    if (fat_rm_entry(nested_test_dir) != OK) {
         kprintf("FAIL cleanup\n");
         return;
     }
