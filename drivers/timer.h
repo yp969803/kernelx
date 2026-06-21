@@ -12,4 +12,5 @@ typedef struct sleep_info {
 void pit_set_timer(uint32_t milliseconds);
 void pit_set_delay(uint32_t milliseconds);
 void initialize_timer(void);
+int sleep_current_task(uint32_t milliseconds);
 void sleep(uint32_t milliseconds);

@@ -3,6 +3,7 @@
 #include "../kernel/kmalloc.h"
 #include "../kernel/mutex.h"
 #include "../kernel/task.h"
+#include "../kernel/utils.h"
 #include "../stdlib/stdio.h"
 #include <stddef.h>
 
@@ -87,13 +88,16 @@ void pit_handler_c(void)
     quantum_expired_handler();
 }
 
-void sleep(uint32_t milliseconds)
+int sleep_current_task(uint32_t milliseconds)
 {
     if (milliseconds == 0 || current_task_TCB == NULL) {
-        return;
+        return ERR;
     }
 
     sleep_info *new_sleep = (sleep_info *)kmalloc(sizeof(sleep_info));
+    if (!new_sleep) {
+        return ERR;
+    }
 
     spinlock_lock(&timer_lock);
     current_task_TCB->state = TASK_BLOCKED;
@@ -112,5 +116,14 @@ void sleep(uint32_t milliseconds)
     }
 
     spinlock_unlock(&timer_lock);
+    return OK;
+}
+
+void sleep(uint32_t milliseconds)
+{
+    if (sleep_current_task(milliseconds) != OK) {
+        return;
+    }
+
     schedule();
 }

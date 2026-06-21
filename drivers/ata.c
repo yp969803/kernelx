@@ -64,6 +64,7 @@ int ata_read_sectors(uint32_t lba, uint8_t sector_count, uint8_t *buffer)
     io_delay400ns(ctrl_base);
 
     if (!(inb(io_base + 7) & ATA_SR_DRDY)) {
+        irqrestore(flags);
         return ERR;
     }
 
@@ -122,6 +123,7 @@ int ata_write_sectors(uint32_t lba, uint8_t sector_count, const uint8_t *buffer)
     io_delay400ns(ctrl_base);
 
     if (!(inb(io_base + 7) & ATA_SR_DRDY)) {
+        irqrestore(flags);
         return ERR;
     }
 
@@ -204,7 +206,7 @@ void init_disk(void)
     disk.partition_start = 1;
     ata_software_reset();
 
-    if (read_fat_boot_sector() != OK || !fat_boot_sector_valid()) {
+    if (read_fat_boot_sector() != OK || !fat_boot_sector_valid() || !fat_table_valid()) {
         if (mkfs_fat() != OK) {
             return;
         }

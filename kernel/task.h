@@ -29,6 +29,9 @@ extern thread_control_block *current_task_TCB;
 
 void initialize_multitasking(void);
 thread_control_block *create_kernel_task(void *(*entry_point)(void *), void *args);
+thread_control_block *create_user_task(void *(*entry_point)(void *), uint32_t *user_stack_base,
+                                       uint32_t *user_stack_top, uint32_t *page_dir);
+void task_pick_next(void);
 void schedule(void);
 void exit(void);
 void quantum_expired_handler(void);

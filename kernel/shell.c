@@ -33,6 +33,7 @@ static void cmd_write(shell_line *line);
 static void cmd_cat(shell_line *line);
 static void cmd_ls(shell_line *line);
 static void cmd_fstest(shell_line *line);
+static void cmd_utest(shell_line *line);
 
 static shell_command commands[] = {
     {"help", "help", cmd_help},
@@ -44,9 +45,46 @@ static shell_command commands[] = {
     {"cat", "cat <path>", cmd_cat},
     {"ls", "ls <path>", cmd_ls},
     {"fstest", "fstest", cmd_fstest},
+    {"utest", "utest", cmd_utest},
 };
 
 #define COMMAND_COUNT (sizeof(commands) / sizeof(commands[0]))
+#define USER_TEST_CODE 0x00400000
+#define USER_TEST_STACK 0x00800000
+#define USER_TEST_STACK_SIZE PAGE_SIZE
+
+extern uint8_t user_test_start[];
+extern uint8_t user_test_end[];
+
+static int shell_map_user_page(uint32_t virtual_addr)
+{
+    uint32_t phys = pmmAllocPageFrame();
+    if (phys == 0) {
+        return ERR;
+    }
+
+    memMapPage(virtual_addr, phys, PAGE_FLAG_WRITE | PAGE_FLAG_USER);
+    mem_set((void *)virtual_addr, 0, PAGE_SIZE);
+    return OK;
+}
+
+static int create_userspace_test_task(void)
+{
+    uint32_t user_test_size = (uint32_t)(user_test_end - user_test_start);
+    if (user_test_size == 0 || user_test_size > PAGE_SIZE) {
+        return ERR;
+    }
+
+    if (shell_map_user_page(USER_TEST_CODE) != OK || shell_map_user_page(USER_TEST_STACK) != OK) {
+        return ERR;
+    }
+
+    mem_copy(user_test_start, (void *)USER_TEST_CODE, user_test_size);
+
+    create_user_task((void *(*)(void *))USER_TEST_CODE, (uint32_t *)USER_TEST_STACK,
+                     (uint32_t *)(USER_TEST_STACK + USER_TEST_STACK_SIZE), INIT_PAGE_DIR_PHY);
+    return OK;
+}
 
 static char *skip_spaces(char *s)
 {
@@ -138,6 +176,7 @@ static int shell_write_file(const char *path, const uint8_t *data, uint32_t size
     uint16_t file_cluster = entry->first_cluster_low;
     if (size > 0 && fat_write_file(&file_cluster, data, size) != OK) {
         kfree(entry);
+        fat_rm_entry(path);
         return ERR;
     }
 
@@ -145,6 +184,7 @@ static int shell_write_file(const char *path, const uint8_t *data, uint32_t size
     entry->file_size         = size;
     if (fat_update_dir_entry(parent_cluster, dir_name, entry) != OK) {
         kfree(entry);
+        fat_rm_entry(path);
         return ERR;
     }
 
@@ -443,6 +483,15 @@ static void cmd_fstest(shell_line *line)
     }
 
     kprintf("PASS\n");
+}
+
+static void cmd_utest(shell_line *line)
+{
+    (void)line;
+
+    if (create_userspace_test_task() != OK) {
+        kprintf("utest: failed\n");
+    }
 }
 
 static void shell_execute(char *line)

@@ -195,6 +195,13 @@ void set_next_task()
     next_task_TCB = next;
 }
 
+void task_pick_next(void)
+{
+    spinlock_lock(&task_lock);
+    set_next_task();
+    spinlock_unlock(&task_lock);
+}
+
 void schedule(void)
 {
     if (!current_task_TCB || !current_task_TCB->next) {
