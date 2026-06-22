@@ -56,18 +56,6 @@ static shell_command commands[] = {
 extern uint8_t user_test_start[];
 extern uint8_t user_test_end[];
 
-static int shell_map_user_page(uint32_t virtual_addr)
-{
-    uint32_t phys = pmmAllocPageFrame();
-    if (phys == 0) {
-        return ERR;
-    }
-
-    memMapPage(virtual_addr, phys, PAGE_FLAG_WRITE | PAGE_FLAG_USER);
-    mem_set((void *)virtual_addr, 0, PAGE_SIZE);
-    return OK;
-}
-
 static int create_userspace_test_task(void)
 {
     uint32_t user_test_size = (uint32_t)(user_test_end - user_test_start);
@@ -75,14 +63,54 @@ static int create_userspace_test_task(void)
         return ERR;
     }
 
-    if (shell_map_user_page(USER_TEST_CODE) != OK || shell_map_user_page(USER_TEST_STACK) != OK) {
+    uint32_t *page_dir;
+    uint32_t *page_dir_phys;
+    if (memCreateUserPageDir(&page_dir, &page_dir_phys) != OK) {
         return ERR;
     }
 
-    mem_copy(user_test_start, (void *)USER_TEST_CODE, user_test_size);
+    uint32_t code_phys = pmmAllocPageFrame();
+    uint32_t stack_phys = pmmAllocPageFrame();
+    if (code_phys == 0 || stack_phys == 0) {
+        if (code_phys != 0) {
+            pmmFreePageFrame(code_phys);
+        }
+        if (stack_phys != 0) {
+            pmmFreePageFrame(stack_phys);
+        }
+        return ERR;
+    }
+
+    uint8_t *code = memTempMap(code_phys);
+    if (!code) {
+        pmmFreePageFrame(code_phys);
+        pmmFreePageFrame(stack_phys);
+        return ERR;
+    }
+    mem_set(code, 0, PAGE_SIZE);
+    mem_copy(user_test_start, code, user_test_size);
+    memTempUnmap();
+
+    uint8_t *stack = memTempMap(stack_phys);
+    if (!stack) {
+        pmmFreePageFrame(code_phys);
+        pmmFreePageFrame(stack_phys);
+        return ERR;
+    }
+    mem_set(stack, 0, PAGE_SIZE);
+    memTempUnmap();
+
+    if (memMapPageInDir(page_dir, USER_TEST_CODE, code_phys, PAGE_FLAG_USER | PAGE_FLAG_WRITE) !=
+            OK ||
+        memMapPageInDir(page_dir, USER_TEST_STACK, stack_phys, PAGE_FLAG_USER | PAGE_FLAG_WRITE) !=
+            OK) {
+        pmmFreePageFrame(code_phys);
+        pmmFreePageFrame(stack_phys);
+        return ERR;
+    }
 
     create_user_task((void *(*)(void *))USER_TEST_CODE, (uint32_t *)USER_TEST_STACK,
-                     (uint32_t *)(USER_TEST_STACK + USER_TEST_STACK_SIZE), INIT_PAGE_DIR_PHY);
+                     (uint32_t *)(USER_TEST_STACK + USER_TEST_STACK_SIZE), page_dir_phys);
     return OK;
 }
 

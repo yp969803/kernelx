@@ -9,11 +9,16 @@ int mem_num_vpages;
 
 #define NUM_PAGES_DIRS 256
 #define NUM_PAGE_FRAMES (0x100000000 / PAGE_SIZE / 8)
+#define TEMP_MAP_ADDR 0xE03FF000
+#define TEMP_MAP_PDE (TEMP_MAP_ADDR >> 22)
+#define TEMP_MAP_PTE ((TEMP_MAP_ADDR >> 12) & 0x3FF)
 
 uint8_t physicalMemoryBitmap[NUM_PAGE_FRAMES / 8]; // Dynamically, bit array
 
 static uint32_t pageDirs[NUM_PAGES_DIRS][1024] __attribute__((aligned(4096)));
+static uint32_t tempPageTable[1024] __attribute__((aligned(4096)));
 static uint8_t pageDirUsed[NUM_PAGES_DIRS];
+static bool tempMapUsed;
 
 void *memmove(void *dest, const void *src, size_t n)
 {
@@ -55,17 +60,21 @@ void pmm_init(uint32_t memLow, uint32_t memHigh)
     totalAlloc   = 0;
     mem_set(pageDirs, 0, sizeof(pageDirs));
     mem_set(pageDirUsed, 0, sizeof(pageDirUsed));
+    tempMapUsed = false;
 }
 
 void invalidate(uint32_t vaddr)
 {
-    asm volatile("invlpg %0" ::"m"(vaddr));
+    asm volatile("invlpg (%0)" ::"r"(vaddr) : "memory");
 }
 
 void init_memory(uint32_t memHigh, uint32_t physicalAllocStart)
 {
     mem_num_vpages      = 0;
     initial_page_dir[0] = 0;
+    mem_set(tempPageTable, 0, sizeof(tempPageTable));
+    initial_page_dir[TEMP_MAP_PDE] =
+        ((uint32_t)tempPageTable - KERNEL_START) | PAGE_FLAG_PRESENT | PAGE_FLAG_WRITE;
     invalidate(0);
     initial_page_dir[1023] =
         ((uint32_t)initial_page_dir - KERNEL_START) | PAGE_FLAG_PRESENT | PAGE_FLAG_WRITE;
@@ -136,6 +145,108 @@ void syncPageDirs()
             }
         }
     }
+}
+
+static uint32_t page_dir_phys(uint32_t *page_dir)
+{
+    return (uint32_t)page_dir - KERNEL_START;
+}
+
+void *memTempMap(uint32_t physAddr)
+{
+    if (tempMapUsed || (tempPageTable[TEMP_MAP_PTE] & PAGE_FLAG_PRESENT)) {
+        return NULL;
+    }
+
+    tempMapUsed = true;
+    tempPageTable[TEMP_MAP_PTE] = physAddr | PAGE_FLAG_PRESENT | PAGE_FLAG_WRITE;
+    invalidate(TEMP_MAP_ADDR);
+    return (void *)TEMP_MAP_ADDR;
+}
+
+void memTempUnmap(void)
+{
+    if (!tempMapUsed) {
+        return;
+    }
+
+    tempPageTable[TEMP_MAP_PTE] = 0;
+    invalidate(TEMP_MAP_ADDR);
+    tempMapUsed = false;
+}
+
+int memCreateUserPageDir(uint32_t **page_dir, uint32_t **page_dir_phys_out)
+{
+    if (!page_dir || !page_dir_phys_out) {
+        return ERR;
+    }
+
+    for (uint32_t i = 0; i < NUM_PAGES_DIRS; i++) {
+        if (pageDirUsed[i]) {
+            continue;
+        }
+
+        uint32_t *newPageDir = pageDirs[i];
+        uint32_t phys        = page_dir_phys(newPageDir);
+
+        mem_set(newPageDir, 0, PAGE_SIZE);
+
+        for (uint32_t entry = 768; entry < 1023; entry++) {
+            newPageDir[entry] = initial_page_dir[entry] & ~PAGE_FLAG_OWNER;
+        }
+        newPageDir[1023] = phys | PAGE_FLAG_PRESENT | PAGE_FLAG_WRITE;
+
+        pageDirUsed[i]      = true;
+        *page_dir           = newPageDir;
+        *page_dir_phys_out  = (uint32_t *)phys;
+        return OK;
+    }
+
+    return ERR;
+}
+
+int memMapPageInDir(uint32_t *page_dir, uint32_t virtualAddr, uint32_t physAddr, uint32_t flags)
+{
+    if (!page_dir) {
+        return ERR;
+    }
+
+    uint32_t pdIndex = virtualAddr >> 22;
+    uint32_t ptIndex = (virtualAddr >> 12) & 0x3FF;
+    uint32_t ptPhys;
+
+    if (!(page_dir[pdIndex] & PAGE_FLAG_PRESENT)) {
+        ptPhys = pmmAllocPageFrame();
+        if (ptPhys == 0) {
+            return ERR;
+        }
+
+        uint32_t *pt = memTempMap(ptPhys);
+        if (!pt) {
+            pmmFreePageFrame(ptPhys);
+            return ERR;
+        }
+        mem_set(pt, 0, PAGE_SIZE);
+        memTempUnmap();
+
+        page_dir[pdIndex] = ptPhys | PAGE_FLAG_PRESENT | PAGE_FLAG_WRITE | PAGE_FLAG_OWNER | flags;
+    } else {
+        ptPhys = page_dir[pdIndex] & PAGE_ADDR_MASK;
+    }
+
+    uint32_t *pt = memTempMap(ptPhys);
+    if (!pt) {
+        return ERR;
+    }
+
+    pt[ptIndex] = physAddr | PAGE_FLAG_PRESENT | flags;
+    memTempUnmap();
+
+    if (memGetCurrentPageDir() == page_dir) {
+        invalidate(virtualAddr);
+    }
+
+    return OK;
 }
 
 void memMapPage(uint32_t virtualAddr, uint32_t physAddr, uint32_t flags)

@@ -13,6 +13,7 @@
 #define PAGE_FLAG_OWNER (1 << 9)
 #define PAGE_FLAG_GLOBAL (1 << 8)
 #define PAGE_SIZE 0x1000
+#define PAGE_ADDR_MASK 0xFFFFF000
 #define REC_PAGEDIR ((uint32_t *)0xFFFFF000)
 #define REC_PAGETABLE(i) ((uint32_t *)(0xFFC00000 + ((i) << 12)))
 
@@ -28,6 +29,10 @@ void invalidate(uint32_t vaddr);
 void pmm_init(uint32_t memLow, uint32_t memHigh);
 uint32_t pmmAllocPageFrame(void);
 void memMapPage(uint32_t virtualAddr, uint32_t physAddr, uint32_t flags);
+int memCreateUserPageDir(uint32_t **page_dir, uint32_t **page_dir_phys);
+int memMapPageInDir(uint32_t *page_dir, uint32_t virtualAddr, uint32_t physAddr, uint32_t flags);
+void *memTempMap(uint32_t physAddr);
+void memTempUnmap(void);
 void pmmFreePageFrame(uint32_t paddr);
 uint32_t *getPhyFmAddress(uint32_t virtualAddr);
 void memUnMapPage(uint32_t virtualAddr);
