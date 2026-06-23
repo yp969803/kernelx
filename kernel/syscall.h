@@ -5,6 +5,7 @@
 #define SYS_WRITE 0
 #define SYS_EXIT 1
 #define SYS_SLEEP 2
+#define SYS_READ 3
 
 typedef int (*syscall_t)(uint32_t, uint32_t, uint32_t, uint32_t, uint32_t, uint32_t);
 

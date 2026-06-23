@@ -37,5 +37,7 @@ thread_control_block *create_user_task(void *(*entry_point)(void *), uint32_t *u
                                        uint32_t *page_dir_phys);
 void task_pick_next(void);
 void schedule(void);
+void task_scheduler_disable(void);
+void task_scheduler_enable(void);
 void exit(void);
 void quantum_expired_handler(void);

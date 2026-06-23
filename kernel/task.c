@@ -16,6 +16,7 @@ thread_control_block *task_list_head   = NULL;
 thread_control_block *next_task_TCB    = NULL;
 
 static uint32_t next_id = 2;
+static volatile uint32_t scheduler_disable_count;
 
 static inline uint32_t *get_esp()
 {
@@ -239,6 +240,18 @@ void schedule(void)
     }
 }
 
+void task_scheduler_disable(void)
+{
+    scheduler_disable_count++;
+}
+
+void task_scheduler_enable(void)
+{
+    if (scheduler_disable_count > 0) {
+        scheduler_disable_count--;
+    }
+}
+
 void exit(void)
 {
     if (!current_task_TCB) {
@@ -253,6 +266,11 @@ void quantum_expired_handler(void)
     if (!current_task_TCB) {
         return;
     }
+    if (scheduler_disable_count > 0) {
+        next_task_TCB = current_task_TCB;
+        return;
+    }
+
     current_task_TCB->time_used++;
     current_task_TCB->time_quantum--;
     if (current_task_TCB->time_quantum <= 0 || current_task_TCB->state != TASK_RUNNING) {

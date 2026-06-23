@@ -32,6 +32,8 @@ void memMapPage(uint32_t virtualAddr, uint32_t physAddr, uint32_t flags);
 int memCreateUserPageDir(uint32_t **page_dir, uint32_t **page_dir_phys);
 int memMapPageInDir(uint32_t *page_dir, uint32_t virtualAddr, uint32_t physAddr, uint32_t flags);
 int memValidateUserBuffer(uint32_t *page_dir, uint32_t addr, uint32_t len, bool write);
+int copy_from_user(uint32_t *page_dir, void *kernel_dst, uint32_t user_src, uint32_t len);
+int copy_to_user(uint32_t *page_dir, uint32_t user_dst, const void *kernel_src, uint32_t len);
 void *memTempMap(uint32_t physAddr);
 void memTempUnmap(void);
 void pmmFreePageFrame(uint32_t paddr);

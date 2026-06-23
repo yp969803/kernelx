@@ -289,6 +289,34 @@ int memValidateUserBuffer(uint32_t *page_dir, uint32_t addr, uint32_t len, bool 
     return OK;
 }
 
+int copy_from_user(uint32_t *page_dir, void *kernel_dst, uint32_t user_src, uint32_t len)
+{
+    if (len == 0) {
+        return OK;
+    }
+    if (!kernel_dst || memGetCurrentPageDir() != page_dir ||
+        memValidateUserBuffer(page_dir, user_src, len, false) != OK) {
+        return ERR;
+    }
+
+    mem_copy((void *)user_src, kernel_dst, len);
+    return OK;
+}
+
+int copy_to_user(uint32_t *page_dir, uint32_t user_dst, const void *kernel_src, uint32_t len)
+{
+    if (len == 0) {
+        return OK;
+    }
+    if (!kernel_src || memGetCurrentPageDir() != page_dir ||
+        memValidateUserBuffer(page_dir, user_dst, len, true) != OK) {
+        return ERR;
+    }
+
+    mem_copy((void *)kernel_src, (void *)user_dst, len);
+    return OK;
+}
+
 void memMapPage(uint32_t virtualAddr, uint32_t physAddr, uint32_t flags)
 {
     uint32_t *prevPageDir = 0;
