@@ -109,8 +109,14 @@ static int create_userspace_test_task(void)
         return ERR;
     }
 
-    create_user_task((void *(*)(void *))USER_TEST_CODE, (uint32_t *)USER_TEST_STACK,
-                     (uint32_t *)(USER_TEST_STACK + USER_TEST_STACK_SIZE), page_dir_phys);
+    if (!create_user_task((void *(*)(void *))USER_TEST_CODE, (uint32_t *)USER_TEST_STACK,
+                          (uint32_t *)(USER_TEST_STACK + USER_TEST_STACK_SIZE), page_dir,
+                          page_dir_phys)) {
+        pmmFreePageFrame(code_phys);
+        pmmFreePageFrame(stack_phys);
+        return ERR;
+    }
+
     return OK;
 }
 

@@ -3,6 +3,7 @@
 #include "kmalloc.h"
 #include "mem.h"
 #include "mutex.h"
+#include "process.h"
 #include <stddef.h>
 
 extern void switch_to_task();
@@ -37,12 +38,14 @@ void initialize_multitasking(void)
 
     current_task_TCB->esp = get_esp();
     current_task_TCB->cr3 = get_cr3();
+    current_task_TCB->process = process_create_kernel(current_task_TCB->cr3);
 
     current_task_TCB->state             = TASK_RUNNING;
     current_task_TCB->next              = current_task_TCB;
     task_list_head                      = current_task_TCB;
     current_task_TCB->id                = 1;
-    current_task_TCB->pid               = 0;
+    current_task_TCB->pid               = current_task_TCB->process ? current_task_TCB->process->pid
+                                                                    : KERNEL_PID;
     current_task_TCB->kernel_stack_base = NULL;
     current_task_TCB->time_used         = 0;
     current_task_TCB->time_quantum      = TIME_QUANTUM_MS;
@@ -84,6 +87,7 @@ thread_control_block *create_kernel_task(void *(*entry_point)(void *), void *arg
     tcb->esp               = stack_top;
     tcb->esp0              = stack_top;
     tcb->cr3               = INIT_PAGE_DIR_PHY;
+    tcb->process           = current_task_TCB->process;
     tcb->state             = TASK_READY;
     tcb->kernel_stack_base = stack;
     tcb->type              = TASK_KERNEL;
@@ -92,7 +96,8 @@ thread_control_block *create_kernel_task(void *(*entry_point)(void *), void *arg
 
     spinlock_lock(&task_lock);
     tcb->id  = next_id++;
-    tcb->pid = current_task_TCB->pid;
+    process_retain(tcb->process);
+    tcb->pid = tcb->process ? tcb->process->pid : KERNEL_PID;
 
     if (!task_list_head) {
         task_list_head = tcb;
@@ -110,7 +115,8 @@ thread_control_block *create_kernel_task(void *(*entry_point)(void *), void *arg
 }
 
 thread_control_block *create_user_task(void *(*entry_point)(void *), uint32_t *user_stack_base,
-                                       uint32_t *user_stack_top, uint32_t *page_dir)
+                                       uint32_t *user_stack_top, uint32_t *page_dir,
+                                       uint32_t *page_dir_phys)
 {
 
     thread_control_block *tcb = kmalloc(sizeof(thread_control_block));
@@ -142,7 +148,13 @@ thread_control_block *create_user_task(void *(*entry_point)(void *), uint32_t *u
 
     tcb->esp               = kernel_stack_top;
     tcb->esp0              = kernel_stack_top;
-    tcb->cr3               = page_dir;
+    tcb->cr3               = page_dir_phys;
+    tcb->process           = process_create_user(page_dir, page_dir_phys);
+    if (!tcb->process) {
+        kfree(kernel_stack);
+        kfree(tcb);
+        return NULL;
+    }
     tcb->state             = TASK_READY;
     tcb->kernel_stack_base = kernel_stack;
     tcb->user_stack_base   = user_stack_base;
@@ -152,7 +164,7 @@ thread_control_block *create_user_task(void *(*entry_point)(void *), uint32_t *u
 
     spinlock_lock(&task_lock);
     tcb->id  = next_id++;
-    tcb->pid = current_task_TCB->pid;
+    tcb->pid = tcb->process->pid;
 
     if (!task_list_head) {
         task_list_head = tcb;

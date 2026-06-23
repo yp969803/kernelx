@@ -10,10 +10,13 @@
 typedef enum { TASK_READY = 0, TASK_RUNNING, TASK_BLOCKED, TASK_ZOOMBIE } task_state_t;
 typedef enum { TASK_KERNEL = 0, TASK_USER } task_type_t;
 
+typedef struct process process_t;
+
 typedef struct thread_control_block {
     uint32_t *esp;
     uint32_t *esp0;
     uint32_t *cr3;
+    process_t *process;
     struct thread_control_block *next;
     task_state_t state;
     uint32_t id;
@@ -30,7 +33,8 @@ extern thread_control_block *current_task_TCB;
 void initialize_multitasking(void);
 thread_control_block *create_kernel_task(void *(*entry_point)(void *), void *args);
 thread_control_block *create_user_task(void *(*entry_point)(void *), uint32_t *user_stack_base,
-                                       uint32_t *user_stack_top, uint32_t *page_dir);
+                                       uint32_t *user_stack_top, uint32_t *page_dir,
+                                       uint32_t *page_dir_phys);
 void task_pick_next(void);
 void schedule(void);
 void exit(void);
