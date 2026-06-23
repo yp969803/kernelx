@@ -2,14 +2,23 @@
 #include "../drivers/timer.h"
 #include "../kernel/utils.h"
 #include "../stdlib/stdio.h"
+#include "process.h"
 #include "task.h"
 
-int sys_write(uint32_t buf, uint32_t len, uint32_t unused2, uint32_t unused3, uint32_t unused4,
+int sys_write(uint32_t fd, uint32_t buf, uint32_t len, uint32_t unused3, uint32_t unused4,
               uint32_t unused5)
 {
+    (void)unused3;
+    (void)unused4;
+    (void)unused5;
 
     const char *buffer = (const char *)buf;
-    if (!buffer) {
+    if (!current_task_TCB || !buffer) {
+        return ERR;
+    }
+
+    file_descriptor_t *desc = process_get_fd(current_task_TCB->process, fd);
+    if (!desc || (desc->type != FD_STDOUT && desc->type != FD_STDERR)) {
         return ERR;
     }
 

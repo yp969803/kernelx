@@ -15,8 +15,9 @@ user_test_start:
     pop esi
 
     mov eax, SYS_WRITE
-    lea ebx, [esi + msg_start - .base]
-    mov ecx, msg_start_len
+    mov ebx, 1
+    lea ecx, [esi + msg_start - .base]
+    mov edx, msg_start_len
     int 0x80
 
     mov eax, SYS_SLEEP
@@ -24,8 +25,15 @@ user_test_start:
     int 0x80
 
     mov eax, SYS_WRITE
-    lea ebx, [esi + msg_wake - .base]
-    mov ecx, msg_wake_len
+    mov ebx, 1
+    lea ecx, [esi + msg_wake - .base]
+    mov edx, msg_wake_len
+    int 0x80
+
+    mov eax, SYS_WRITE
+    mov ebx, 2
+    lea ecx, [esi + msg_err - .base]
+    mov edx, msg_err_len
     int 0x80
 
     mov eax, SYS_EXIT
@@ -43,5 +51,8 @@ msg_wake:
     db "userspace woke and exiting", 10
 msg_wake_len equ $ - msg_wake
 
-user_test_end:
+msg_err:
+    db "stderr fd also works", 10
+msg_err_len equ $ - msg_err
 
+user_test_end:
