@@ -249,6 +249,46 @@ int memMapPageInDir(uint32_t *page_dir, uint32_t virtualAddr, uint32_t physAddr,
     return OK;
 }
 
+int memValidateUserBuffer(uint32_t *page_dir, uint32_t addr, uint32_t len, bool write)
+{
+    if (!page_dir || len == 0 || addr >= KERNEL_START || addr + len - 1 < addr ||
+        addr + len - 1 >= KERNEL_START) {
+        return ERR;
+    }
+
+    uint32_t current = addr & PAGE_ADDR_MASK;
+    uint32_t end     = (addr + len - 1) & PAGE_ADDR_MASK;
+
+    while (current <= end) {
+        uint32_t pdIndex = current >> 22;
+        uint32_t ptIndex = (current >> 12) & 0x3FF;
+        uint32_t pde     = page_dir[pdIndex];
+
+        if (!(pde & PAGE_FLAG_PRESENT) || !(pde & PAGE_FLAG_USER)) {
+            return ERR;
+        }
+
+        uint32_t *pt = memTempMap(pde & PAGE_ADDR_MASK);
+        if (!pt) {
+            return ERR;
+        }
+
+        uint32_t pte = pt[ptIndex];
+        memTempUnmap();
+
+        if (!(pte & PAGE_FLAG_PRESENT) || !(pte & PAGE_FLAG_USER)) {
+            return ERR;
+        }
+        if (write && !(pte & PAGE_FLAG_WRITE)) {
+            return ERR;
+        }
+
+        current += PAGE_SIZE;
+    }
+
+    return OK;
+}
+
 void memMapPage(uint32_t virtualAddr, uint32_t physAddr, uint32_t flags)
 {
     uint32_t *prevPageDir = 0;

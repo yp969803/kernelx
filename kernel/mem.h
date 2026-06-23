@@ -31,6 +31,7 @@ uint32_t pmmAllocPageFrame(void);
 void memMapPage(uint32_t virtualAddr, uint32_t physAddr, uint32_t flags);
 int memCreateUserPageDir(uint32_t **page_dir, uint32_t **page_dir_phys);
 int memMapPageInDir(uint32_t *page_dir, uint32_t virtualAddr, uint32_t physAddr, uint32_t flags);
+int memValidateUserBuffer(uint32_t *page_dir, uint32_t addr, uint32_t len, bool write);
 void *memTempMap(uint32_t physAddr);
 void memTempUnmap(void);
 void pmmFreePageFrame(uint32_t paddr);
