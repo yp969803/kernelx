@@ -8,3 +8,5 @@ bx_enh_dbg.ini
 **/*.img
 .agents
 .codex
+
+compile_flags.txt
