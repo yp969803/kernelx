@@ -2,6 +2,7 @@
 #include "../drivers/keyboard.h"
 #include "../drivers/vga.h"
 #include "../fs/fat.h"
+#include "../fs/vfs.h"
 #include "../stdlib/stdio.h"
 #include "../stdlib/string.h"
 #include "kmalloc.h"
@@ -36,16 +37,11 @@ static void cmd_fstest(shell_line *line);
 static void cmd_utest(shell_line *line);
 
 static shell_command commands[] = {
-    {"help", "help", cmd_help},
-    {"clear", "clear", cmd_clear},
-    {"mkdir", "mkdir <path>", cmd_mkdir},
-    {"touch", "touch <path>", cmd_touch},
-    {"rm", "rm <path>", cmd_rm},
-    {"write", "write <path> <text>", cmd_write},
-    {"cat", "cat <path>", cmd_cat},
-    {"ls", "ls <path>", cmd_ls},
-    {"fstest", "fstest", cmd_fstest},
-    {"utest", "utest", cmd_utest},
+    {"help", "help", cmd_help},           {"clear", "clear", cmd_clear},
+    {"mkdir", "mkdir <path>", cmd_mkdir}, {"touch", "touch <path>", cmd_touch},
+    {"rm", "rm <path>", cmd_rm},          {"write", "write <path> <text>", cmd_write},
+    {"cat", "cat <path>", cmd_cat},       {"ls", "ls <path>", cmd_ls},
+    {"fstest", "fstest", cmd_fstest},     {"utest", "utest", cmd_utest},
 };
 
 #define COMMAND_COUNT (sizeof(commands) / sizeof(commands[0]))
@@ -69,7 +65,7 @@ static int create_userspace_test_task(void)
         return ERR;
     }
 
-    uint32_t code_phys = pmmAllocPageFrame();
+    uint32_t code_phys  = pmmAllocPageFrame();
     uint32_t stack_phys = pmmAllocPageFrame();
     if (code_phys == 0 || stack_phys == 0) {
         if (code_phys != 0) {
@@ -194,71 +190,46 @@ static bool path_exists(const char *path)
 
 static int shell_write_file(const char *path, const uint8_t *data, uint32_t size)
 {
-    fat_rm_entry(path);
-
-    if (mkfile_fat(path) != OK) {
+    vfs_file_t *file;
+    if (vfs_open(path, O_WRONLY | O_CREAT | O_TRUNC, &file) != OK) {
         return ERR;
     }
 
-    char dir_name[11];
-    uint16_t parent_cluster;
-    fat_directory_entry_t *entry = lookup_entry(path, dir_name, &parent_cluster);
-    if (!entry) {
+    if (size > 0 && vfs_write(file, data, size) != (int)size) {
+        vfs_close(file);
         return ERR;
     }
 
-    uint16_t file_cluster = entry->first_cluster_low;
-    if (size > 0 && fat_write_file(&file_cluster, data, size) != OK) {
-        kfree(entry);
-        fat_rm_entry(path);
-        return ERR;
-    }
-
-    entry->first_cluster_low = file_cluster;
-    entry->file_size         = size;
-    if (fat_update_dir_entry(parent_cluster, dir_name, entry) != OK) {
-        kfree(entry);
-        fat_rm_entry(path);
-        return ERR;
-    }
-
-    kfree(entry);
-    return OK;
+    return vfs_close(file);
 }
 
 static int shell_cat_file(const char *path)
 {
-    char dir_name[11];
-    uint16_t parent_cluster;
-    fat_directory_entry_t *entry = lookup_entry(path, dir_name, &parent_cluster);
-    if (!entry || entry->attr == ATTR_DIRECTORY) {
-        if (entry) {
-            kfree(entry);
-        }
+    vfs_file_t *file;
+    if (vfs_open(path, O_RDONLY, &file) != OK) {
         return ERR;
     }
 
-    uint8_t *buffer = kmalloc(entry->file_size + 1);
+    uint8_t *buffer = kmalloc(file->size + 1);
     if (!buffer) {
-        kfree(entry);
+        vfs_close(file);
         return ERR;
     }
 
-    if (entry->file_size > 0) {
-        uint16_t cluster = entry->first_cluster_low;
-        if (fat_read_file(&cluster, buffer, entry->file_size) != OK) {
+    uint32_t size = file->size;
+    if (size > 0) {
+        if (vfs_read(file, buffer, size) != (int)size) {
             kfree(buffer);
-            kfree(entry);
+            vfs_close(file);
             return ERR;
         }
     }
 
-    buffer[entry->file_size] = '\0';
+    buffer[size] = '\0';
     kprintf("%s\n", buffer);
 
     kfree(buffer);
-    kfree(entry);
-    return OK;
+    return vfs_close(file);
 }
 
 static bool buffer_equals(const uint8_t *a, const uint8_t *b, uint32_t size)
@@ -322,7 +293,7 @@ static void fill_pattern(uint8_t *buffer, uint32_t size)
 
 static void format_fat_name(const fat_directory_entry_t *entry, char *buffer, uint32_t max)
 {
-    uint32_t pos = 0;
+    uint32_t pos      = 0;
     uint32_t name_end = 8;
     uint32_t ext_end  = 11;
 
@@ -373,7 +344,7 @@ static void cmd_mkdir(shell_line *line)
         return;
     }
 
-    if (mkdir_fat(line->arg1) != OK) {
+    if (vfs_mkdir(line->arg1) != OK) {
         kprintf("mkdir: %s: failed\n", line->arg1);
         return;
     }
@@ -393,11 +364,13 @@ static void cmd_touch(shell_line *line)
         return;
     }
 
-    if (mkfile_fat(line->arg1) != OK) {
+    vfs_file_t *file;
+    if (vfs_open(line->arg1, O_CREAT, &file) != OK) {
         kprintf("touch: %s: failed\n", line->arg1);
         return;
     }
 
+    vfs_close(file);
     kprintf("ok\n");
 }
 
@@ -408,7 +381,7 @@ static void cmd_rm(shell_line *line)
         return;
     }
 
-    if (fat_rm_entry(line->arg1) != OK) {
+    if (vfs_unlink(line->arg1) != OK) {
         kprintf("rm: %s: failed\n", line->arg1);
         return;
     }
@@ -475,9 +448,9 @@ static void cmd_fstest(shell_line *line)
 {
     (void)line;
 
-    const uint8_t small_data[] = "kernelx-fat-smoke";
-    const char root_test_file[] = "/kxtest.txt";
-    const char nested_test_dir[] = "/kxtest";
+    const uint8_t small_data[]    = "kernelx-fat-smoke";
+    const char root_test_file[]   = "/kxtest.txt";
+    const char nested_test_dir[]  = "/kxtest";
     const char nested_test_file[] = "/kxtest/big.bin";
 
     kprintf("FAT root file: ");

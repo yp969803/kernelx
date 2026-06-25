@@ -53,6 +53,50 @@ file_descriptor_t *process_get_fd(process_t *process, uint32_t fd)
     return &process->fds[fd];
 }
 
+vfs_file_t *process_get_file(process_t *process, uint32_t fd)
+{
+    file_descriptor_t *desc = process_get_fd(process, fd);
+    if (!desc) {
+        return 0;
+    }
+
+    return desc->file;
+}
+
+int process_alloc_fd(process_t *process, vfs_file_t *file)
+{
+    if (!process || !file) {
+        return -1;
+    }
+
+    for (uint32_t fd = 3; fd < MAX_FDS; fd++) {
+        if (!process->fds[fd].used) {
+            process->fds[fd].used = true;
+            process->fds[fd].type = FD_NONE;
+            process->fds[fd].file = vfs_file_retain(file);
+            return (int)fd;
+        }
+    }
+
+    return -1;
+}
+
+int process_close_fd(process_t *process, uint32_t fd)
+{
+    if (!process || fd >= MAX_FDS || fd < 3 || !process->fds[fd].used) {
+        return -1;
+    }
+
+    if (process->fds[fd].file) {
+        vfs_file_release(process->fds[fd].file);
+    }
+
+    process->fds[fd].used = false;
+    process->fds[fd].type = FD_NONE;
+    process->fds[fd].file = 0;
+    return 0;
+}
+
 void process_retain(process_t *process)
 {
     if (!process) {
@@ -70,6 +114,11 @@ void process_release(process_t *process)
 
     process->ref_count--;
     if (process->ref_count == 0) {
+        for (uint32_t fd = 3; fd < MAX_FDS; fd++) {
+            if (process->fds[fd].used) {
+                process_close_fd(process, fd);
+            }
+        }
         kfree(process);
     }
 }

@@ -5,6 +5,7 @@
 #include "../drivers/keyboard.h"
 #include "../drivers/timer.h"
 #include "../fs/fat.h"
+#include "../fs/vfs.h"
 #include "../stdlib/stdio.h"
 #include "kmalloc.h"
 #include "mem.h"
@@ -43,6 +44,7 @@ void main(uint32_t magic, struct multiboot_info *mb_addr)
     init_memory(mb_addr->mem_upper * 1024, physicalAllocStart);
     kmallocInit(0x1000);
     init_disk();
+    vfs_init();
     initialize_multitasking();
     initialize_timer();
     create_kernel_task(shell_task, NULL);
