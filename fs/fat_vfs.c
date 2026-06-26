@@ -2,6 +2,7 @@
 #include "../kernel/mem.h"
 #include "../kernel/utils.h"
 #include "fat.h"
+#include "fat_vfs.h"
 #include "vfs.h"
 #include <stddef.h>
 

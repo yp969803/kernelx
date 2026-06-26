@@ -1,12 +1,9 @@
 #include "vfs.h"
+#include "fat_vfs.h"
 #include "../kernel/kmalloc.h"
 #include "../kernel/mem.h"
 #include "../kernel/utils.h"
 #include <stddef.h>
-
-int fat_vfs_open(const char *path, uint32_t flags, vfs_file_t **out);
-int fat_vfs_unlink(const char *path);
-int fat_vfs_mkdir(const char *path);
 
 void vfs_init(void) {}
 
