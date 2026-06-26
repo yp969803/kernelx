@@ -1,6 +1,5 @@
 #include "vga.h"
 #include "../kernel/mem.h"
-#include <string.h>
 
 // Default color: Black background, White foreground
 static uint16_t color = (Black << 4) | White;
