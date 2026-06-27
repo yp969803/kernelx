@@ -57,13 +57,14 @@ isr_pit:
     mov cr3,eax                  
 .doneVAS:
 
+    ; Send End Of Interrupt (EOI) to PIC before restoring registers.
+    mov al, 0x20
+    out 0x20, al
+
     pop gs
     pop fs
     pop es
     pop ds
     popad
-    ; Send End Of Interrupt (EOI) to PIC
-    mov al, 0x20
-    out 0x20, al
 
     iretd

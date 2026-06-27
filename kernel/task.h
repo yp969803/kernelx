@@ -29,6 +29,7 @@ typedef struct thread_control_block {
 } thread_control_block;
 
 extern thread_control_block *current_task_TCB;
+extern thread_control_block *next_task_TCB;
 
 void initialize_multitasking(void);
 thread_control_block *create_kernel_task(void *(*entry_point)(void *), void *args);

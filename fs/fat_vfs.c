@@ -1,8 +1,8 @@
+#include "fat_vfs.h"
 #include "../kernel/kmalloc.h"
 #include "../kernel/mem.h"
 #include "../kernel/utils.h"
 #include "fat.h"
-#include "fat_vfs.h"
 #include "vfs.h"
 #include <stddef.h>
 
@@ -13,14 +13,29 @@ typedef struct {
     uint16_t first_cluster;
 } fat_vfs_file_t;
 
+typedef struct {
+    fat_directory_entry_t *entries;
+    uint32_t count;
+} fat_vfs_dir_t;
+
 static int fat_vfs_file_read(vfs_file_t *file, uint8_t *buffer, uint32_t len);
 static int fat_vfs_file_write(vfs_file_t *file, const uint8_t *buffer, uint32_t len);
 static int fat_vfs_file_close(vfs_file_t *file);
+static int fat_vfs_dir_read(vfs_file_t *file, vfs_dirent_t *entry);
+static int fat_vfs_dir_close(vfs_file_t *file);
 
 static const vfs_file_ops_t fat_file_ops = {
     fat_vfs_file_read,
     fat_vfs_file_write,
+    NULL,
     fat_vfs_file_close,
+};
+
+static const vfs_file_ops_t fat_dir_ops = {
+    NULL,
+    NULL,
+    fat_vfs_dir_read,
+    fat_vfs_dir_close,
 };
 
 static int path_copy(char dst[128], const char *src)
@@ -72,13 +87,100 @@ static int refresh_file_entry(vfs_file_t *file, fat_directory_entry_t **entry_ou
     return OK;
 }
 
+static void format_fat_name(const fat_directory_entry_t *entry, char *buffer, uint32_t max)
+{
+    uint32_t pos      = 0;
+    uint32_t name_end = 8;
+    uint32_t ext_end  = 11;
+
+    if (!entry || !buffer || max == 0) {
+        return;
+    }
+
+    while (name_end > 0 && entry->name[name_end - 1] == ' ') {
+        name_end--;
+    }
+    while (ext_end > 8 && entry->name[ext_end - 1] == ' ') {
+        ext_end--;
+    }
+
+    for (uint32_t i = 0; i < name_end && pos < max - 1; i++) {
+        buffer[pos++] = entry->name[i];
+    }
+
+    if (ext_end > 8 && pos < max - 1) {
+        buffer[pos++] = '.';
+        for (uint32_t i = 8; i < ext_end && pos < max - 1; i++) {
+            buffer[pos++] = entry->name[i];
+        }
+    }
+
+    if (entry->attr == ATTR_DIRECTORY && pos < max - 1) {
+        buffer[pos++] = '/';
+    }
+
+    buffer[pos] = '\0';
+}
+
+static int open_dir(const char *path, uint32_t flags, vfs_file_t **out)
+{
+    if ((flags & O_ACCMODE) != O_RDONLY) {
+        return ERR;
+    }
+
+    fat_directory_entry_t *entries = kmalloc(sizeof(fat_directory_entry_t) * 64);
+    if (!entries) {
+        return ERR;
+    }
+
+    uint32_t count = 0;
+    if (fat_list_dir(path, entries, 64, &count) != OK) {
+        kfree(entries);
+        return ERR;
+    }
+
+    vfs_file_t *file = kmalloc(sizeof(vfs_file_t));
+    if (!file) {
+        kfree(entries);
+        return ERR;
+    }
+
+    fat_vfs_dir_t *fat_dir = kmalloc(sizeof(fat_vfs_dir_t));
+    if (!fat_dir) {
+        kfree(file);
+        kfree(entries);
+        return ERR;
+    }
+
+    mem_set(file, 0, sizeof(vfs_file_t));
+    mem_set(fat_dir, 0, sizeof(fat_vfs_dir_t));
+
+    fat_dir->entries = entries;
+    fat_dir->count   = count;
+
+    file->mode       = S_IFDIR;
+    file->size       = count;
+    file->offset     = 0;
+    file->flags      = flags;
+    file->ref_count  = 1;
+    file->fs_private = fat_dir;
+    file->fops       = &fat_dir_ops;
+
+    *out = file;
+    return OK;
+}
+
 int fat_vfs_open(const char *path, uint32_t flags, vfs_file_t **out)
 {
-    if (!out) {
+    if (!path || !out) {
         return ERR;
     }
 
     *out = NULL;
+
+    if ((flags & O_DIRECTORY) && path[0] == '/' && path[1] == '\0') {
+        return open_dir(path, flags, out);
+    }
 
     fat_directory_entry_t *entry;
     char dir_name[11];
@@ -86,7 +188,7 @@ int fat_vfs_open(const char *path, uint32_t flags, vfs_file_t **out)
 
     entry = lookup_entry(path, dir_name, &parent_cluster);
     if (!entry) {
-        if (!(flags & O_CREAT) || mkfile_fat(path) != OK) {
+        if ((flags & O_DIRECTORY) || !(flags & O_CREAT) || mkfile_fat(path) != OK) {
             return ERR;
         }
         entry = lookup_entry(path, dir_name, &parent_cluster);
@@ -96,6 +198,15 @@ int fat_vfs_open(const char *path, uint32_t flags, vfs_file_t **out)
     }
 
     if (entry->attr == ATTR_DIRECTORY) {
+        if (flags & O_DIRECTORY) {
+            kfree(entry);
+            return open_dir(path, flags, out);
+        }
+        kfree(entry);
+        return ERR;
+    }
+
+    if (flags & O_DIRECTORY) {
         kfree(entry);
         return ERR;
     }
@@ -274,6 +385,48 @@ static int fat_vfs_file_close(vfs_file_t *file)
     if (file->fs_private) {
         kfree(file->fs_private);
     }
+    kfree(file);
+    return OK;
+}
+
+static int fat_vfs_dir_read(vfs_file_t *file, vfs_dirent_t *entry)
+{
+    if (!file || !entry) {
+        return ERR;
+    }
+
+    fat_vfs_dir_t *fat_dir = file->fs_private;
+    if (!fat_dir || !fat_dir->entries) {
+        return ERR;
+    }
+
+    if (file->offset >= fat_dir->count) {
+        return 0;
+    }
+
+    fat_directory_entry_t *fat_entry = &fat_dir->entries[file->offset++];
+    mem_set(entry, 0, sizeof(vfs_dirent_t));
+    format_fat_name(fat_entry, entry->name, sizeof(entry->name));
+    entry->mode = (fat_entry->attr == ATTR_DIRECTORY) ? S_IFDIR : S_IFREG;
+    entry->size = fat_entry->file_size;
+
+    return 1;
+}
+
+static int fat_vfs_dir_close(vfs_file_t *file)
+{
+    if (!file) {
+        return ERR;
+    }
+
+    fat_vfs_dir_t *fat_dir = file->fs_private;
+    if (fat_dir) {
+        if (fat_dir->entries) {
+            kfree(fat_dir->entries);
+        }
+        kfree(fat_dir);
+    }
+
     kfree(file);
     return OK;
 }

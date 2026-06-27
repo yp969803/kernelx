@@ -45,17 +45,17 @@ static shell_command commands[] = {
 };
 
 #define COMMAND_COUNT (sizeof(commands) / sizeof(commands[0]))
-#define USER_TEST_CODE 0x00400000
-#define USER_TEST_STACK 0x00800000
-#define USER_TEST_STACK_SIZE PAGE_SIZE
+#define USER_SHELL_CODE 0x00400000
+#define USER_SHELL_STACK 0x00800000
+#define USER_SHELL_STACK_SIZE PAGE_SIZE
 
-extern uint8_t user_test_start[];
-extern uint8_t user_test_end[];
+extern uint8_t user_shell_start[];
+extern uint8_t user_shell_end[];
 
-static int create_userspace_test_task(void)
+int start_userspace_shell(void)
 {
-    uint32_t user_test_size = (uint32_t)(user_test_end - user_test_start);
-    if (user_test_size == 0 || user_test_size > PAGE_SIZE) {
+    uint32_t user_shell_size = (uint32_t)(user_shell_end - user_shell_start);
+    if (user_shell_size == 0 || user_shell_size > PAGE_SIZE) {
         return ERR;
     }
 
@@ -84,7 +84,7 @@ static int create_userspace_test_task(void)
         return ERR;
     }
     mem_set(code, 0, PAGE_SIZE);
-    mem_copy(user_test_start, code, user_test_size);
+    mem_copy(user_shell_start, code, user_shell_size);
     memTempUnmap();
 
     uint8_t *stack = memTempMap(stack_phys);
@@ -96,17 +96,17 @@ static int create_userspace_test_task(void)
     mem_set(stack, 0, PAGE_SIZE);
     memTempUnmap();
 
-    if (memMapPageInDir(page_dir, USER_TEST_CODE, code_phys, PAGE_FLAG_USER | PAGE_FLAG_WRITE) !=
+    if (memMapPageInDir(page_dir, USER_SHELL_CODE, code_phys, PAGE_FLAG_USER | PAGE_FLAG_WRITE) !=
             OK ||
-        memMapPageInDir(page_dir, USER_TEST_STACK, stack_phys, PAGE_FLAG_USER | PAGE_FLAG_WRITE) !=
+        memMapPageInDir(page_dir, USER_SHELL_STACK, stack_phys, PAGE_FLAG_USER | PAGE_FLAG_WRITE) !=
             OK) {
         pmmFreePageFrame(code_phys);
         pmmFreePageFrame(stack_phys);
         return ERR;
     }
 
-    if (!create_user_task((void *(*)(void *))USER_TEST_CODE, (uint32_t *)USER_TEST_STACK,
-                          (uint32_t *)(USER_TEST_STACK + USER_TEST_STACK_SIZE), page_dir,
+    if (!create_user_task((void *(*)(void *))USER_SHELL_CODE, (uint32_t *)USER_SHELL_STACK,
+                          (uint32_t *)(USER_SHELL_STACK + USER_SHELL_STACK_SIZE), page_dir,
                           page_dir_phys)) {
         pmmFreePageFrame(code_phys);
         pmmFreePageFrame(stack_phys);
@@ -291,37 +291,6 @@ static void fill_pattern(uint8_t *buffer, uint32_t size)
     }
 }
 
-static void format_fat_name(const fat_directory_entry_t *entry, char *buffer, uint32_t max)
-{
-    uint32_t pos      = 0;
-    uint32_t name_end = 8;
-    uint32_t ext_end  = 11;
-
-    while (name_end > 0 && entry->name[name_end - 1] == ' ') {
-        name_end--;
-    }
-    while (ext_end > 8 && entry->name[ext_end - 1] == ' ') {
-        ext_end--;
-    }
-
-    for (uint32_t i = 0; i < name_end && pos < max - 1; i++) {
-        buffer[pos++] = entry->name[i];
-    }
-
-    if (ext_end > 8 && pos < max - 1) {
-        buffer[pos++] = '.';
-        for (uint32_t i = 8; i < ext_end && pos < max - 1; i++) {
-            buffer[pos++] = entry->name[i];
-        }
-    }
-
-    if (entry->attr == ATTR_DIRECTORY && pos < max - 1) {
-        buffer[pos++] = '/';
-    }
-
-    buffer[pos] = '\0';
-}
-
 static void cmd_help(shell_line *line)
 {
     (void)line;
@@ -429,19 +398,23 @@ static void cmd_ls(shell_line *line)
         return;
     }
 
-    fat_directory_entry_t entries[64];
-    uint32_t count = 0;
-
-    if (fat_list_dir(path, entries, 64, &count) != OK) {
+    vfs_file_t *dir;
+    if (vfs_open(path, O_RDONLY | O_DIRECTORY, &dir) != OK) {
         kprintf("ls: %s: failed\n", path);
         return;
     }
 
-    for (uint32_t i = 0; i < count; i++) {
-        char name[16];
-        format_fat_name(&entries[i], name, sizeof(name));
-        kprintf("%s\n", name);
+    vfs_dirent_t entry;
+    int result;
+    while ((result = vfs_readdir(dir, &entry)) > 0) {
+        kprintf("%s\n", entry.name);
     }
+
+    if (result != 0) {
+        kprintf("ls: %s: failed\n", path);
+    }
+
+    vfs_close(dir);
 }
 
 static void cmd_fstest(shell_line *line)
@@ -496,7 +469,7 @@ static void cmd_utest(shell_line *line)
 {
     (void)line;
 
-    if (create_userspace_test_task() != OK) {
+    if (start_userspace_shell() != OK) {
         kprintf("utest: failed\n");
     }
 }

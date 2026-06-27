@@ -11,6 +11,7 @@
 #define SYS_LSEEK 6
 #define SYS_UNLINK 7
 #define SYS_MKDIR 8
+#define SYS_GETDENTS 9
 
 typedef int (*syscall_t)(uint32_t, uint32_t, uint32_t, uint32_t, uint32_t, uint32_t);
 

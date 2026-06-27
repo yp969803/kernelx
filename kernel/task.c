@@ -148,7 +148,7 @@ thread_control_block *create_user_task(void *(*entry_point)(void *), uint32_t *u
     *(--kernel_stack_top) = (uint32_t)USER_DS;
 
     tcb->esp               = kernel_stack_top;
-    tcb->esp0              = kernel_stack_top;
+    tcb->esp0              = kernel_stack + KERNEL_STACK_SIZE / 4;
     tcb->cr3               = page_dir_phys;
     tcb->process           = process_create_user(page_dir, page_dir_phys);
     if (!tcb->process) {

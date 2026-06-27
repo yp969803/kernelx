@@ -1,8 +1,8 @@
 #include "vfs.h"
-#include "fat_vfs.h"
 #include "../kernel/kmalloc.h"
 #include "../kernel/mem.h"
 #include "../kernel/utils.h"
+#include "fat_vfs.h"
 #include <stddef.h>
 
 void vfs_init(void) {}
@@ -81,6 +81,21 @@ int vfs_lseek(vfs_file_t *file, int32_t offset, uint32_t whence)
 
     file->offset = (uint32_t)new_offset;
     return new_offset;
+}
+
+int vfs_readdir(vfs_file_t *file, vfs_dirent_t *entry)
+{
+    if (!file || !entry) {
+        return ERR;
+    }
+    if ((file->mode & S_IFDIR) != S_IFDIR) {
+        return ERR;
+    }
+    if (!file->fops || !file->fops->readdir) {
+        return ERR;
+    }
+
+    return file->fops->readdir(file, entry);
 }
 
 int vfs_unlink(const char *path)

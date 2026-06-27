@@ -311,13 +311,54 @@ int sys_mkdir(uint32_t path, uint32_t unused1, uint32_t unused2, uint32_t unused
     return vfs_mkdir(kernel_path);
 }
 
+int sys_getdents(uint32_t fd, uint32_t buf, uint32_t len, uint32_t unused3, uint32_t unused4,
+                 uint32_t unused5)
+{
+    (void)unused3;
+    (void)unused4;
+    (void)unused5;
+
+    if (!current_task_TCB || !current_task_TCB->process || !buf || len < sizeof(vfs_dirent_t)) {
+        return ERR;
+    }
+
+    if (memValidateUserBuffer(current_task_TCB->process->page_dir, buf, len, true) != OK) {
+        return ERR;
+    }
+
+    vfs_file_t *file = process_get_file(current_task_TCB->process, fd);
+    if (!file) {
+        return ERR;
+    }
+
+    uint32_t written = 0;
+    while (written + sizeof(vfs_dirent_t) <= len) {
+        vfs_dirent_t entry;
+        int result = vfs_readdir(file, &entry);
+        if (result < 0) {
+            return written ? (int)written : ERR;
+        }
+        if (result == 0) {
+            break;
+        }
+
+        if (copy_to_user(current_task_TCB->process->page_dir, buf + written, &entry,
+                         sizeof(vfs_dirent_t)) != OK) {
+            return written ? (int)written : ERR;
+        }
+        written += sizeof(vfs_dirent_t);
+    }
+
+    return (int)written;
+}
+
 syscall_t syscall_table[] = {
-    (syscall_t)sys_write, (syscall_t)sys_exit,   (syscall_t)sys_sleep,
-    (syscall_t)sys_read,  (syscall_t)sys_open,   (syscall_t)sys_close,
-    (syscall_t)sys_lseek, (syscall_t)sys_unlink, (syscall_t)sys_mkdir,
+    (syscall_t)sys_write, (syscall_t)sys_exit,     (syscall_t)sys_sleep, (syscall_t)sys_read,
+    (syscall_t)sys_open,  (syscall_t)sys_close,    (syscall_t)sys_lseek, (syscall_t)sys_unlink,
+    (syscall_t)sys_mkdir, (syscall_t)sys_getdents,
 };
 
-void syscall_handler_c(pt_regs *regs)
+int syscall_handler_c(pt_regs *regs)
 {
     uint32_t num  = regs->eax; // syscall number
     uint32_t arg1 = regs->ebx;
@@ -329,9 +370,14 @@ void syscall_handler_c(pt_regs *regs)
 
     if (num >= sizeof(syscall_table) / sizeof(syscall_t)) {
         regs->eax = -1; // invalid syscall
-        return;
+        return -1;
     }
 
     syscall_t func = syscall_table[num];
-    regs->eax      = func(arg1, arg2, arg3, arg4, arg5, arg6);
+    int result = func(arg1, arg2, arg3, arg4, arg5, arg6);
+    regs->eax  = result;
+    if (current_task_TCB && current_task_TCB->state == TASK_RUNNING) {
+        next_task_TCB = current_task_TCB;
+    }
+    return result;
 }

@@ -47,7 +47,9 @@ void main(uint32_t magic, struct multiboot_info *mb_addr)
     vfs_init();
     initialize_multitasking();
     initialize_timer();
-    create_kernel_task(shell_task, NULL);
+    if (start_userspace_shell() != OK) {
+        kprintf("failed to start userspace shell\n");
+    }
 
     while (1) {
         halt();
