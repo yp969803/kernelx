@@ -16,6 +16,8 @@
 
 #define ATA_CMD_READ_PIO 0x20
 #define ATA_CMD_WRITE_PIO 0x30
+#define ATA_CMD_READ_DMA 0xC8
+#define ATA_CMD_WRITE_DMA 0xCA
 
 #define ATA_CMD_IDENTIFY 0xEC
 #define ATA_CMD_CACHE_FLUSH 0xE7
@@ -26,6 +28,11 @@ typedef struct {
     uint8_t slave;            // 0 for master, 1 for slave
     uint32_t size_in_sectors; // total size of the partition in sectors
     uint32_t partition_start; // sector number where partition starts
+    uint16_t bmide_base;
+    volatile uint8_t dma_ready;
+    volatile uint8_t irq_seen;
+    volatile uint8_t dma_error;
+    volatile uint8_t dma_active;
 } ATA_Device;
 
 extern ATA_Device disk;
@@ -34,3 +41,4 @@ int ata_read_sectors(uint32_t lba, uint8_t sector_count, uint8_t *buffer);
 void init_disk(void);
 void ata_software_reset();
 int ata_write_sectors(uint32_t lba, uint8_t sector_count, const uint8_t *buffer);
+void ata_irq_handler_c(void);

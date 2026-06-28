@@ -16,7 +16,7 @@ static uint32_t time_elapsed_boot = 0;
 static sleep_info *sleep_list_head = NULL;
 static sleep_info *sleep_list_tail = NULL;
 
-static spinlock timer_lock;
+static spinlock timer_lock = {1, NULL};
 
 void pit_set_timer(uint32_t freq)
 {

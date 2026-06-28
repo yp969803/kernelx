@@ -5,7 +5,7 @@
 # detect all .o files based on their .c source
 C_SOURCES = $(wildcard kernel/*.c drivers/*.c cpu/*.c stdlib/*.c fs/*.c)
 HEADERS = $(wildcard kernel/*.h  drivers/*.h cpu/*.h stdlib/*.h fs/*.h)
-OBJ_FILES = ${C_SOURCES:.c=.o cpu/isr_keyboard.o cpu/kernel_entry.o cpu/gdt.o cpu/exception_isr.o cpu/isr_pit.o cpu/switch_task.o cpu/syscall_isr.o cpu/user_shell.o}
+OBJ_FILES = ${C_SOURCES:.c=.o cpu/isr_keyboard.o cpu/kernel_entry.o cpu/gdt.o cpu/exception_isr.o cpu/isr_pit.o cpu/isr_ata.o cpu/switch_task.o cpu/syscall_isr.o cpu/user_shell.o}
 DISK_IMG = disk.img
 QEMU = qemu-system-i386
 QEMU_FLAGS = -cdrom kernelx.iso -drive file=$(DISK_IMG),format=raw,if=ide,index=0,media=disk -m 512M -boot d

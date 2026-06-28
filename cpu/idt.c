@@ -48,6 +48,9 @@ extern void isr_pit(void);
 // ISR for system call interrupt
 extern void isr_syscall(void);
 
+// ISR for primary ATA interrupt
+extern void isr_ata(void);
+
 struct IDTEntry idt[IDT_SIZE];
 
 static struct IDTPtr idt_ptr;
@@ -87,9 +90,9 @@ static inline void pic_remap(void)
     outb(0x21, 0x01);
     outb(0xA1, 0x01);
 
-    // Unmask IRQ0 (timer) and IRQ1 (keyboard)
-    outb(0x21, 0xFF & ~(0x01 | 0x02));
-    outb(0xA1, 0xFF);
+    // Unmask IRQ0 (timer), IRQ1 (keyboard), IRQ2 (slave cascade), and IRQ14 (primary ATA).
+    outb(0x21, 0xFF & ~(0x01 | 0x02 | 0x04));
+    outb(0xA1, 0xFF & ~(0x40));
 }
 
 void idt_init(void)
@@ -136,6 +139,7 @@ void idt_init(void)
     // Set IRQ handlers
     set_idt_entry(0x21, (uint32_t)isr_keyboard, KERNEL_CS, 0x8E);
     set_idt_entry(0x20, (uint32_t)isr_pit, KERNEL_CS, 0x8E);
+    set_idt_entry(0x2E, (uint32_t)isr_ata, KERNEL_CS, 0x8E);
     set_idt_entry(0x80, (uint32_t)isr_syscall, KERNEL_CS, 0xEF);
 
     load_idt();
