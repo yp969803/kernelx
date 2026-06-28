@@ -60,23 +60,9 @@ isr_syscall:
     mov cr3,eax
 .doneVAS:
 
-    mov ax, [esp]
-    mov gs, ax
-    mov ax, [esp + 4]
-    mov fs, ax
-    mov ax, [esp + 8]
-    mov es, ax
-    mov ax, [esp + 12]
-    mov ds, ax
-    add esp, 16
-
-    mov edi, [esp]
-    mov esi, [esp + 4]
-    mov ebp, [esp + 8]
-    mov ebx, [esp + 16]
-    mov edx, [esp + 20]
-    mov ecx, [esp + 24]
-    mov eax, [esp + 28]
-    add esp, 32
-
+    pop gs
+    pop fs
+    pop es
+    pop ds
+    popad
     iretd
